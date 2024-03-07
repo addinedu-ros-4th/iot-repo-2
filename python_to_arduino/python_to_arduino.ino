@@ -15,8 +15,6 @@ String water = "";
 String order = "";
 String response = "";
 
-int Angle = 0;
-
 
 
 String sub_string = "";
@@ -69,20 +67,21 @@ void loop() {
     count++;
     
     
-    if (meal == 1) {
-      
-      for (Angle = 0; Angle <= 100; Angle++) {
-        servo.write(Angle);
-      
+    if (count % 10 == 0) {
+      angle = angle.toInt();
 
-        // for (; Angle <= 100; Angle--) {
-        //   servo.write(Angle);
-        //   delay(5);
+      for (angle = 0; angle <= 100; angle++) {
+        servo.write(angle);
+        delay(5);
+      }
 
-        //   if (Angle == 0) {
-        //     break;
-        //   }
-        // }
+      for (angle = 100; angle = tmp; angle--) {
+        servo.write(angle);
+        delay(5);
+
+        if (angle == 0) {
+          break;
+        }
       }
 
       count = 0;
@@ -91,5 +90,5 @@ void loop() {
     
     
   }
-  delay(10);
+  delay(100);
 }
