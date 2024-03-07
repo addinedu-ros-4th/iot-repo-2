@@ -27,6 +27,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import uic
 
+
+
+    
 class Thread(QThread) :
     update = pyqtSignal()
     def __init__(self, sec=0, parent=None):
@@ -51,7 +54,7 @@ class iotComputer(QMainWindow, from_class):
         self.setupUi(self)
         self.setWindowTitle("control_app")
         
-        self.pySerial = sri.Serial(port="COM6", baudrate=9600)# serial
+        self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)# serial
         
 
         
@@ -63,31 +66,44 @@ class iotComputer(QMainWindow, from_class):
 
 
         self.inputThread = Thread(self) # Thread 
-        self.outputThread = Thread(self)
+        
         self.inputThread.running = True
-        self.outputThread.running = True
+        
         self.inputThread.start()
-        self.outputThread.start()
+        
         
 
         
 
 
         self.mealButton.clicked.connect(self.sendSignalFormeal)
+        self.waterButton.clicked.connect(self.sendSignalForWater)
+        self.minusMealButton.clicked.connect(self.minusMealPlan)
+        self.plusMealButton.clicked.connect(self.plusMealPlan)
+
 
 
         self.inputThread.update.connect(self.updateInput) # link Thread
-        self.outputThread.update.connect(self.updateOutput)
+        
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
-        self.temperature = 0. ### 이후 아두이노 input으로 대체
-        self.waterQulity = 0.
-        self.waterLevel = 0.
+        if self.pySerial.in_waiting != 0:
+            try:
+                self.temperature = 0. ### 이후 아두이노 input으로 대체
+                self.waterQulity = 0.
+                self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
+            except SyntaxError:
+                pass
+            self.tempNowLabel.setText(str(self.temperature))
+            self.waterLevelLabel.setText(str(self.waterLevel))
+            self.waterQulityLabel.setText(str(self.waterQulity))
         
 
-    def updateOutput(self) : # 아두이노로 신호 보내주는 함수 (반복됨)
-        pass
+    def updateOutput(self) : # 아두이노로 신호 보내주는 함수
+        commend = str(30)
+        self.pySerial.write(commend.encode())
+        # pass
 
 
 
