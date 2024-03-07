@@ -22,6 +22,7 @@
 import serial as sri
 import time
 import sys
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -39,13 +40,13 @@ class Thread(QThread) :
 
 
     def run(self):
-        count = 0
         while self.running == True:
             self.update.emit()
             time.sleep(0.05)
 
 
-path = "/home/jongchanjang/amr_ws/git_ws/iot-repo-2/iotProject.ui"
+
+path = "./IoTproject.ui"
 from_class = uic.loadUiType(path)[0]
 class iotComputer(QMainWindow, from_class):
 
@@ -112,8 +113,10 @@ class iotComputer(QMainWindow, from_class):
 
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
+        self.commendList[1] = 1
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
+        self.commendList[1] = 0
 
 
     def plusMealPlan(self) : # 배식 시간 추가 함수
