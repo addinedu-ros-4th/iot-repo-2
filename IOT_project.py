@@ -45,7 +45,7 @@ class Thread(QThread) :
             time.sleep(0.05)
 
 
-path = "/home/jongchanjang/amr_ws/git_ws/iot-repo-2/IoTproject.ui"
+path = "/home/jongchanjang/amr_ws/git_ws/iot-repo-2/iotProject.ui"
 from_class = uic.loadUiType(path)[0]
 class iotComputer(QMainWindow, from_class):
 
@@ -107,12 +107,9 @@ class iotComputer(QMainWindow, from_class):
 
 
     def sendSignalFormeal(self) : # 배식신호 발송 함수
-        self.commendList[0] = 1
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
-        print(self.commendList)
-        self.commendList[0] = 0
-        
+
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
         commend = str(self.commendList).replace("[", "").replace("]", "")
