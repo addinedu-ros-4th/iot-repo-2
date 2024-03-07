@@ -22,6 +22,7 @@
 import serial as sri
 import time
 import sys
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -44,7 +45,7 @@ class Thread(QThread) :
             time.sleep(0.05)
 
 
-path = "./iotProject.ui"
+path = "./IoTproject.ui"
 from_class = uic.loadUiType(path)[0]
 class iotComputer(QMainWindow, from_class):
 
