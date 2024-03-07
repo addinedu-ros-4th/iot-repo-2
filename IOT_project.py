@@ -39,7 +39,6 @@ class Thread(QThread) :
 
 
     def run(self):
-        count = 0
         while self.running == True:
             self.update.emit()
             time.sleep(0.05)
@@ -110,8 +109,10 @@ class iotComputer(QMainWindow, from_class):
         pass
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
+        self.commendList[1] = 1
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
+        self.commendList[1] = 0
 
 
     def plusMealPlan(self) : # 배식 시간 추가 함수
@@ -121,10 +122,16 @@ class iotComputer(QMainWindow, from_class):
         pass
 
     def turnOnLight(self) : # 전구 키는 함수
-        pass
+        if self.commendList[2] != 1:
+            self.commendList[2] = 1
+            commend = str(self.commendList).replace("[", "").replace("]", "")
+            self.pySerial.write(commend.encode())
 
     def turnOffLight(self) : # 전구 끄는 함수
-        pass
+        if self.commendList[2] != 0:
+            self.commendList[2] = 0
+            commend = str(self.commendList).replace("[", "").replace("]", "")
+            self.pySerial.write(commend.encode())
 
 
 
