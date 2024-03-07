@@ -63,14 +63,13 @@ class iotComputer(QMainWindow, from_class):
         self.waterLevel = 0. # 수위
         self.temperatureRange = 0. # 수온 범위
         self.lightIsOn = False # 전구 상태
-
+        self.mealCount = 0
 
         self.inputThread = Thread(self) # Thread 
-        
         self.inputThread.running = True
-        
         self.inputThread.start()
         
+        self.commendList = [0, 0, 0, 0, 0, 0] # meal, water, light, meal_count, water_level, servo_angle
         
 
         
@@ -89,21 +88,21 @@ class iotComputer(QMainWindow, from_class):
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
+            
             try:
                 self.temperature = 0. ### 이후 아두이노 input으로 대체
                 self.waterQulity = 0.
                 self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
             except SyntaxError:
                 pass
+        
+            
             self.tempNowLabel.setText(str(self.temperature))
             self.waterLevelLabel.setText(str(self.waterLevel))
             self.waterQulityLabel.setText(str(self.waterQulity))
         
 
-    def updateOutput(self) : # 아두이노로 신호 보내주는 함수
-        commend = str(30)
-        self.pySerial.write(commend.encode())
-        # pass
+    
 
 
 
@@ -111,7 +110,8 @@ class iotComputer(QMainWindow, from_class):
         pass
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
-        pass
+        commend = str(self.commendList).replace("[", "").replace("]", "")
+        self.pySerial.write(commend.encode())
 
 
     def plusMealPlan(self) : # 배식 시간 추가 함수

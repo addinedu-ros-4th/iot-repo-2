@@ -1,11 +1,25 @@
 #include <Servo.h>
+
 Servo servo;
-int angle = 0;
 int count = 0;
+
+
+String angle = "";
+String meal_count = "";
+String water_level = "";
+
+String meal = "";
+String light = "";
+String water = "";
+
+String order = "";
 String response = "";
 
+
+
+String sub_string = "";
 void setup() {
-  // put your setup code here, to run once:
+  
   Serial.begin(9600);
   servo.attach(9);
   servo.write(0);
@@ -13,18 +27,49 @@ void setup() {
 
 }
 
+
+void decode_input(String orders) {
+  
+  meal = orders.substring(0, orders.indexOf(","));
+  sub_string = orders.substring(orders.indexOf(",") + meal.length());
+
+  water = sub_string.substring(0, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + water.length());
+  
+  light = sub_string.substring(0, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + light.length());
+
+  
+  meal_count = sub_string.substring(0, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + meal_count.length());
+  
+  water_level = sub_string.substring(0, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + water_level.length());
+  
+  angle = sub_string.substring(0, sub_string.indexOf(","));
+  
+}
+
+
+
 void loop() {
-  // put your main code here, to run repeatedly:
+  
   count++;
   response = "{\"waterLevel\" : "+ (String)analogRead(A0) + "}";
   Serial.println(response);
+  
+  
+  
+
   while (Serial.available() > 0) {
+    order = Serial.readStringUntil('\n');
+    decode_input(order);
     count++;
     
-    String input_str = Serial.readStringUntil('\n');
-    float tmp = input_str.toFloat();
-    if (count % 1000 == 0) {
-      servo.write(tmp);
+    
+    if (count % 10 == 0) {
+      servo.write(angle.toInt());
+      count = 0;
     }
     
   }
