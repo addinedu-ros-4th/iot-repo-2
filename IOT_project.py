@@ -108,8 +108,10 @@ class iotComputer(QMainWindow, from_class):
 
 
     def sendSignalFormeal(self) : # 배식신호 발송 함수
+        self.commendList[0] = 1
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
+        self.commendList[0] = 0
 
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수

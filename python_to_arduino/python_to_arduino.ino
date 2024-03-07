@@ -2,15 +2,15 @@
 
 Servo servo;
 int count = 0;
+int servo_angle = 0;
 
+String angle = "0";
+String meal_count = "0";
+String water_level = "0";
 
-String angle = "";
-String meal_count = "";
-String water_level = "";
-
-String meal = "";
-String light = "";
-String water = "";
+String meal = "0";
+String light = "0";
+String water = "0";
 
 String order = "";
 String response = "";
@@ -54,8 +54,8 @@ void decode_input(String orders) {
 
 void loop() {
   
-  count++;
-  response = "{\"waterLevel\" : "+ (String)analogRead(A0) + "}";
+  
+  response = "{\"waterLevel\" : "+ (String)analogRead(A0) + ", " + "\"test_val\" " + ": " + (String)meal + "}";
   Serial.println(response);
   
   
@@ -64,27 +64,12 @@ void loop() {
   while (Serial.available() > 0) {
     order = Serial.readStringUntil('\n');
     decode_input(order);
-    count++;
     
+    servo_angle = 150;
     
-    if (count % 10 == 0) {
-      angle = angle.toInt();
-
-      for (angle = 0; angle <= 100; angle++) {
-        servo.write(angle);
-        delay(5);
-      }
-
-      for (angle = 100; angle = tmp; angle--) {
-        servo.write(angle);
-        delay(5);
-
-        if (angle == 0) {
-          break;
-        }
-      }
-
-      count = 0;
+    if (meal == "1") {
+      servo.write(servo_angle);
+      
     }
 
     
