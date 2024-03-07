@@ -1063,7 +1063,7 @@ border-width: 1px; border-radius: 0px;</string>
        </property>
       </item>
      </widget>
-     <widget class="QTimeEdit" name="timeEdit_2">
+     <widget class="QTimeEdit" name="timeEdit">
       <property name="geometry">
        <rect>
         <x>110</x>
