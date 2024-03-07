@@ -45,7 +45,7 @@ class Thread(QThread) :
             time.sleep(0.05)
 
 
-path = "./iotProject.ui"
+path = "/home/jongchanjang/amr_ws/git_ws/iot-repo-2/iotProject.ui"
 from_class = uic.loadUiType(path)[0]
 class iotComputer(QMainWindow, from_class):
 
@@ -70,7 +70,7 @@ class iotComputer(QMainWindow, from_class):
         self.inputThread.start()
         
         self.commendList = [0, 0, 0, 0, 0, 0] # meal, water, light, meal_count, water_level, servo_angle
-        
+
 
         
 
@@ -107,7 +107,9 @@ class iotComputer(QMainWindow, from_class):
 
 
     def sendSignalFormeal(self) : # 배식신호 발송 함수
-        pass
+        commend = str(self.commendList).replace("[", "").replace("]", "")
+        self.pySerial.write(commend.encode())
+
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
         commend = str(self.commendList).replace("[", "").replace("]", "")
@@ -115,16 +117,62 @@ class iotComputer(QMainWindow, from_class):
 
 
     def plusMealPlan(self) : # 배식 시간 추가 함수
-        pass
+        Feed_number = self.mealCB.currentText()
+        Feed_time = self.timeEdit.text()
+        meal_item_text = f"횟수: {Feed_number}, 시간: {Feed_time}"
+
+        self.model = self.mealList.model()
+        if self.model is None:  # 모델이 없을 경우 새 모델 생성
+            self.model = QStandardItemModel()
+
+        item = QStandardItem(meal_item_text)
+
+        # 중복제거
+        for row in range(self.model.rowCount()):
+            index = self.model.index(row, 0)
+            if self.model.data(index) == meal_item_text:
+                return 
+
+        # 아이템 시간정렬
+        inserted = False
+        for row in range(self.model.rowCount()):
+            index = self.model.index(row, 0)
+            item_time = self.model.data(index).split("시간:")[1].strip()  # 시간 정보 추출
+
+            # AM , PM 비교
+            time1 = QTime.fromString(Feed_time, "h:mm AP")
+            time2 = QTime.fromString(item_time, "h:mm AP")
+
+            # 새 아이템의 시간이 현재 아이템의 시간보다 작다면 삽입
+            if time1 < time2:
+                self.model.insertRow(row, item)
+                inserted = True
+                break
+
+        # 만약 모든 아이템의 시간보다 크다면 마지막에 삽입
+        if not inserted:
+            self.model.appendRow(item)
+
+        self.mealList.setModel(self.model)
+        
 
     def minusMealPlan(self) : # 배식시간 제거 함수
-        pass
+        selected_indexes = self.mealList.selectedIndexes()  # 선택된 항목의 인덱스 가져오기
+        for index in selected_indexes:
+            self.model.removeRow(index.row())  # 모델에서 선택된 항목 제거
+        self.mealList.setModel(self.model) # 모델 재설정
 
     def turnOnLight(self) : # 전구 키는 함수
-        pass
+        if self.commendList[2] != 1:
+            self.commendList[2] = 1
+            commend = str(self.commendList).replace("[", "").replace("]", "")
+            self.pySerial.write(commend.encode())
 
     def turnOffLight(self) : # 전구 끄는 함수
-        pass
+        if self.commendList[2] != 0:
+            self.commendList[2] = 0
+            commend = str(self.commendList).replace("[", "").replace("]", "")
+            self.pySerial.write(commend.encode())
 
 
 

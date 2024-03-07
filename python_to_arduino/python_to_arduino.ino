@@ -68,9 +68,26 @@ void loop() {
     
     
     if (count % 10 == 0) {
-      servo.write(angle.toInt());
+      angle = angle.toInt();
+
+      for (angle = 0; angle <= 100; angle++) {
+        servo.write(angle);
+        delay(5);
+      }
+
+      for (angle = 100; angle = tmp; angle--) {
+        servo.write(angle);
+        delay(5);
+
+        if (angle == 0) {
+          break;
+        }
+      }
+
       count = 0;
     }
+
+    
     
   }
   delay(100);
