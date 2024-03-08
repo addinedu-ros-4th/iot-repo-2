@@ -54,7 +54,7 @@ class iotComputer(QMainWindow, from_class):
         super().__init__()
         self.setupUi(self)
         self.setWindowTitle("control_app")
-        
+        self.setGeometry(0, 0, 1260, 800)
         self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)# serial
         
 
@@ -74,7 +74,7 @@ class iotComputer(QMainWindow, from_class):
 
 
         
-
+        
 
         self.mealButton.clicked.connect(self.sendSignalFormeal)
         self.waterButton.clicked.connect(self.sendSignalForWater)
@@ -82,7 +82,7 @@ class iotComputer(QMainWindow, from_class):
         self.plusMealButton.clicked.connect(self.plusMealPlan)
 
 
-
+        
         self.inputThread.update.connect(self.updateInput) # link Thread
         
 
@@ -96,13 +96,46 @@ class iotComputer(QMainWindow, from_class):
                 self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
             except SyntaxError:
                 pass
-        
             
-            self.tempNowLabel.setText(str(self.temperature))
+            self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
+            self.tempNowLabel.setText(str(self.temperature) + "°C")
             self.waterLevelLabel.setText(str(self.waterLevel))
-            self.waterQulityLabel.setText(str(self.waterQulity))
+            self.waterQulityLabel.setText(str(self.waterQulity) + "mg")
+            self.showStatusOfFishbowl()
+        
         
 
+    def showStatusOfFishbowl(self) :
+        text = "어항상태 -"
+        
+
+        if self.temperature > 40 : # 
+            text += " 냉각 필요"
+            self.tempStateLabel.setText("부적합")
+        elif self.temperature < 20 : # 
+            text += " 보온 필요"
+            self.tempStateLabel.setText("부적합")
+        else :
+            self.tempStateLabel.setText("적합")
+
+
+        if self.waterLevel < 500 : # 센서도착시 확인후 변경
+            text += " 물 보충 필요"
+            self.levelStateLabel.setText("부적합")
+        else : 
+            self.levelStateLabel.setText("적합")
+
+
+        if self.waterQulity > 300 : # 센서도착시 확인후 변경
+            text += " 물 교체 필요"
+            self.qulityStateLabel.setText("부적합")
+        else:
+            self.qulityStateLabel.setText("적합")
+
+        if text == "어항상태 -" :
+            text += "정상"
+
+        self.fishbowlStateLabel.setText(text)
     
 
 
@@ -119,6 +152,8 @@ class iotComputer(QMainWindow, from_class):
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
         self.commendList[1] = 0
+
+
 
 
     def plusMealPlan(self) : # 배식 시간 추가 함수
@@ -161,6 +196,8 @@ class iotComputer(QMainWindow, from_class):
         self.mealList.setModel(self.model)
         
 
+
+
     def minusMealPlan(self) : # 배식시간 제거 함수
         selected_indexes = self.mealList.selectedIndexes()  # 선택된 항목의 인덱스 가져오기
         for index in selected_indexes:
@@ -168,13 +205,13 @@ class iotComputer(QMainWindow, from_class):
         self.mealList.setModel(self.model) # 모델 재설정
 
     def turnOnLight(self) : # 전구 키는 함수
-        if self.commendList[2] != 1:
+        if self.commendList[2] != 1 :
             self.commendList[2] = 1
             commend = str(self.commendList).replace("[", "").replace("]", "")
             self.pySerial.write(commend.encode())
 
     def turnOffLight(self) : # 전구 끄는 함수
-        if self.commendList[2] != 0:
+        if self.commendList[2] != 0 :
             self.commendList[2] = 0
             commend = str(self.commendList).replace("[", "").replace("]", "")
             self.pySerial.write(commend.encode())

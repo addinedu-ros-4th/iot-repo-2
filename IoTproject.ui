@@ -158,7 +158,7 @@
          <property name="font">
           <font>
            <family>Segoe UI</family>
-           <pointsize>8</pointsize>
+           <pointsize>13</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -337,7 +337,7 @@ border-radius: 20px;</string>
          <property name="font">
           <font>
            <family>Segoe UI</family>
-           <pointsize>8</pointsize>
+           <pointsize>13</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -459,7 +459,7 @@ border-radius: 20px;</string>
          <property name="font">
           <font>
            <family>Segoe UI</family>
-           <pointsize>8</pointsize>
+           <pointsize>13</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -506,7 +506,7 @@ border-radius: 20px;</string>
    <widget class="QPushButton" name="waterButton">
     <property name="geometry">
      <rect>
-      <x>670</x>
+      <x>660</x>
       <y>330</y>
       <width>111</width>
       <height>41</height>
@@ -949,7 +949,7 @@ border-radius: 10px;</string>
        <string>시간 제거</string>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>12</x>
@@ -1027,7 +1027,7 @@ border-radius: 10px;</string>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>120</x>
