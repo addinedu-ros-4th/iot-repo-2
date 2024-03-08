@@ -22,11 +22,15 @@
 import serial as sri
 import time
 import sys
+import pandas as pd
+
+import mysql.connector
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import uic
+import pyqtgraph as pg
 
 
 
@@ -42,7 +46,7 @@ class Thread(QThread) :
     def run(self):
         while self.running == True:
             self.update.emit()
-            time.sleep(0.05)
+            time.sleep(1)
 
 
 
@@ -57,6 +61,18 @@ class iotComputer(QMainWindow, from_class):
         
         self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)# serial
         
+        # db 초기화
+        conn = mysql.connector.connect(
+            user = "joe",
+            password = "0000",
+            database = "amrbase"
+        )
+        
+        cur = conn.cursor(buffered = True)
+        sql = "delete from aquarium"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
 
         
         self.temperature = 0. # 수온
@@ -72,7 +88,7 @@ class iotComputer(QMainWindow, from_class):
         
         self.commendList = [0, 0, 0, 0, 0, 0] # meal, water, light, meal_count, water_level, servo_angle
 
-
+        self.levelPlot = self.levelGraph.plot(pen = "b")
         
 
 
@@ -96,14 +112,54 @@ class iotComputer(QMainWindow, from_class):
                 self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
             except SyntaxError:
                 pass
-        
+                
+            # self.saveData()
             
             self.tempNowLabel.setText(str(self.temperature))
             self.waterLevelLabel.setText(str(self.waterLevel))
             self.waterQulityLabel.setText(str(self.waterQulity))
+            
+            self.saveData()
         
-
+    def saveData(self) :
+        # local db 사용
+        conn = mysql.connector.connect(
+            user = "joe",
+            password = "0000",
+            database = "amrbase"
+        )
+        
+        cur = conn.cursor(buffered = True)
+        sql = f"insert into aquarium (time, water_height) values(current_timestamp, {self.waterLevel})"
+        cur.execute(sql)
+        conn.commit()
+        
+        conn.close()
+        
+        self.getDataLog()
+        
+    def getDataLog(self):
+        conn = mysql.connector.connect(
+            user = "joe",
+            password = "0000",
+            database = "amrbase"
+        )
+        
+        cur = conn.cursor(buffered = True)
+        sql = "select * from aquarium"
+        cur.execute(sql)
+        result = cur.fetchall()
+        conn.close()
+        
+        aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level"])
+        self.posixTimeList = aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
+        self.dataLength = len(self.posixTimeList)
+        self.drawChart(self.posixTimeList, aquariumDf["water_level"])
     
+        
+    def drawChart(self, x, y):
+        self.levelGraph.plot(x, y, pen = pg.mkPen(color = "r", width = 2))
+        self.levelGraph.getPlotItem().hideAxis("bottom")
 
 
 

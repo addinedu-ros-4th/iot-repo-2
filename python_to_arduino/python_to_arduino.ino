@@ -1,5 +1,7 @@
 #include <Servo.h>
 
+const int WHEIGHT = 14;
+
 Servo servo;
 int count = 0;
 
@@ -23,6 +25,8 @@ void setup() {
   Serial.begin(9600);
   servo.attach(9);
   servo.write(0);
+
+  pinMode(WHEIGHT, INPUT);
 
 
 }
@@ -55,40 +59,39 @@ void decode_input(String orders) {
 void loop() {
   
   count++;
-  response = "{\"waterLevel\" : "+ (String)analogRead(A0) + "}";
-  Serial.println(response);
+  response = "{\"waterLevel\" : "+ (String)analogRead(WHEIGHT) + "}";
+  Serial.println(response);  
   
   
-  
 
-  while (Serial.available() > 0) {
-    order = Serial.readStringUntil('\n');
-    decode_input(order);
-    count++;
+  // while (Serial.available() > 0) {
+  //   order = Serial.readStringUntil('\n');
+  //   decode_input(order);
+  //   count++;
     
     
-    if (count % 10 == 0) {
-      angle = angle.toInt();
+  //   if (count % 10 == 0) {
+  //     angle = angle.toInt();
 
-      for (angle = 0; angle <= 100; angle++) {
-        servo.write(angle);
-        delay(5);
-      }
+  //     for (angle = 0; angle <= 100; angle++) {
+  //       servo.write(angle);
+  //       delay(5);
+  //     }
 
-      for (angle = 100; angle = tmp; angle--) {
-        servo.write(angle);
-        delay(5);
+  //     for (angle = 100; angle = tmp; angle--) {
+  //       servo.write(angle);
+  //       delay(5);
 
-        if (angle == 0) {
-          break;
-        }
-      }
+  //       if (angle == 0) {
+  //         break;
+  //       }
+  //     }
 
-      count = 0;
-    }
+  //     count = 0;
+  //   }
 
     
     
-  }
-  delay(100);
+  // }
+  delay(500);
 }
