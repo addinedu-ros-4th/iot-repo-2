@@ -1,5 +1,7 @@
 #include <Servo.h>
 
+const int WHEIGHT = 14;
+
 Servo servo;
 int count = 0;
 int servo_angle = 0;
@@ -23,6 +25,8 @@ void setup() {
   Serial.begin(9600);
   servo.attach(9);
   servo.write(0);
+
+  pinMode(WHEIGHT, INPUT);
 
 
 }
@@ -54,6 +58,7 @@ void decode_input(String orders) {
 
 void loop() {
   
+
   
   response = "{\"waterLevel\" : "+ (String)analogRead(A0) + ", " + "\"test_val\" " + ": " + (String)meal + "}";
   Serial.println(response);
@@ -64,9 +69,11 @@ void loop() {
   while (Serial.available() > 0) {
     order = Serial.readStringUntil('\n');
     decode_input(order);
+
     
     servo_angle = 150;
     
+
     if (meal == "1") {
       servo.write(servo_angle);
       
@@ -75,5 +82,5 @@ void loop() {
     
     
   }
-  delay(100);
+  delay(500);
 }
