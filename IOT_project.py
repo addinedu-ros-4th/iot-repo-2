@@ -80,15 +80,24 @@ class iotComputer(QMainWindow, from_class):
         self.temperatureRange = 0. # 수온 범위
         self.lightIsOn = False # 전구 상태
         self.mealCount = 0
+        self.planList = ""
+        self.mealCountList = ""
 
+        startTime = time.strftime('%H:%M:%S').split(":")
+        self.startTimeTypeMilliSecond = (int(startTime[0]) * 60**2 + int(startTime[1]) * 60 + int(startTime[2])) * 1000 # 시작시 시간(단위 : ms)
+        
         self.inputThread = Thread(self) # Thread 
         self.inputThread.running = True
         self.inputThread.start()
         
-        self.commendList = [0, 0, 0, 0, 0, 0] # meal, water, light, meal_count, water_level, servo_angle
+        self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
 
         self.levelPlot = self.levelGraph.plot(pen = "b")
         
+
+
+        commend = str(self.commendList).replace("[", "").replace("]", "")
+        self.pySerial.write(commend.encode())
         
 
         self.mealButton.clicked.connect(self.sendSignalFormeal)
@@ -106,11 +115,14 @@ class iotComputer(QMainWindow, from_class):
         if self.pySerial.in_waiting != 0:
             
             try:
-                self.temperature = 0. ### 이후 아두이노 input으로 대체
-                self.waterQulity = 0.
-                self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
+                decodedDict = self.pySerial.readline().decode()#eval(self.pySerial.readline().decode())
+                print(self.commendList, decodedDict)
+                # self.temperature = 0. ### 이후 아두이노 input으로 대체
+                # self.waterQulity = decodedDict["test_val"]
+                # self.waterLevel = decodedDict["waterLevel"]
             except SyntaxError:
                 pass
+                #print("error")
 
             
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
@@ -119,7 +131,7 @@ class iotComputer(QMainWindow, from_class):
             self.waterQulityLabel.setText(str(self.waterQulity) + "mg")
             self.showStatusOfFishbowl()
             
-            self.saveData()
+            #self.saveData()
         
         
 
@@ -200,24 +212,43 @@ class iotComputer(QMainWindow, from_class):
 
     def sendSignalFormeal(self) : # 배식신호 발송 함수
         self.commendList[0] = 1
-        commend = str(self.commendList).replace("[", "").replace("]", "")
-        self.pySerial.write(commend.encode())
+        self.sendSignal()
         self.commendList[0] = 0
 
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
         self.commendList[1] = 1
-        commend = str(self.commendList).replace("[", "").replace("]", "")
-        self.pySerial.write(commend.encode())
+        self.sendSignal()
         self.commendList[1] = 0
 
 
+    
 
 
     def plusMealPlan(self) : # 배식 시간 추가 함수
         Feed_number = self.mealCB.currentText()
         Feed_time = self.timeEdit.text()
         meal_item_text = f"횟수: {Feed_number}, 시간: {Feed_time}"
+        
+        if "PM" in Feed_time :
+            addNum = 12
+        else :
+            addNum = 0
+
+        planTime = Feed_time.replace("AM","").replace("PM","").split(":")
+        planTime = ((addNum + int(planTime[0])) * 60**2 + int(planTime[1]) * 60) * 1000
+        
+        if self.planList == "":
+            self.planList = self.planList + str(planTime)
+        else:
+            self.planList = self.planList + "," + str(planTime)
+        if self.mealCountList == "":
+            self.mealCountList += str(Feed_number)
+        else:
+            self.mealCountList += "," + str(Feed_number)
+        self.commendList = [0, 0, 0, self.mealCountList + ",0", 0, 0, self.startTimeTypeMilliSecond, self.planList + ",0"]
+
+        self.sendSignal()
 
         self.model = self.mealList.model()
         if self.model is None:  # 모델이 없을 경우 새 모델 생성
@@ -262,17 +293,19 @@ class iotComputer(QMainWindow, from_class):
             self.model.removeRow(index.row())  # 모델에서 선택된 항목 제거
         self.mealList.setModel(self.model) # 모델 재설정
 
+    def sendSignal(self):
+        commend = str(self.commendList).replace("[", "").replace("]", "")
+        self.pySerial.write(commend.encode())
+
     def turnOnLight(self) : # 전구 키는 함수
         if self.commendList[2] != 1 :
             self.commendList[2] = 1
-            commend = str(self.commendList).replace("[", "").replace("]", "")
-            self.pySerial.write(commend.encode())
+            self.sendSignal()
 
     def turnOffLight(self) : # 전구 끄는 함수
         if self.commendList[2] != 0 :
             self.commendList[2] = 0
-            commend = str(self.commendList).replace("[", "").replace("]", "")
-            self.pySerial.write(commend.encode())
+            self.sendSignal()
 
 
 
