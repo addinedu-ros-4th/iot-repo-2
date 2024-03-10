@@ -222,14 +222,7 @@ class iotComputer(QMainWindow, from_class):
         self.commendList[1] = 0
 
 
-    
-
-
-    def plusMealPlan(self) : # 배식 시간 추가 함수
-        Feed_number = self.mealCB.currentText()
-        Feed_time = self.timeEdit.text()
-        meal_item_text = f"횟수: {Feed_number}, 시간: {Feed_time}"
-        
+    def planSignal(self, Feed_time, Feed_number) :
         if "PM" in Feed_time :
             addNum = 12
         else :
@@ -250,6 +243,13 @@ class iotComputer(QMainWindow, from_class):
 
         self.sendSignal()
 
+
+    def plusMealPlan(self) : # 배식 시간 추가 함수
+        Feed_number = self.mealCB.currentText()
+        Feed_time = self.timeEdit.text()
+        meal_item_text = f"횟수: {Feed_number}, 시간: {Feed_time}"
+        
+
         self.model = self.mealList.model()
         if self.model is None:  # 모델이 없을 경우 새 모델 생성
             self.model = QStandardItemModel()
@@ -262,6 +262,8 @@ class iotComputer(QMainWindow, from_class):
             if self.model.data(index) == meal_item_text:
                 return 
 
+        self.planSignal(Feed_time, Feed_number)
+        
         # 아이템 시간정렬
         inserted = False
         for row in range(self.model.rowCount()):

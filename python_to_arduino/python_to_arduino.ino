@@ -108,7 +108,7 @@ void plan_is_now() {
   }
 
   if (is_now == true) {
-    for (int i = 0; i < meal_count.toInt(); i++){
+    for (int i = 0; i < plan_count.toInt(); i++){
       activate_servo();
     }
   }
