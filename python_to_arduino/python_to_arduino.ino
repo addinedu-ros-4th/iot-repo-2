@@ -1,6 +1,9 @@
 #include <Servo.h>
 
-const int WHEIGHT = 14;
+const int WLEVELECHO = 14;
+const int WLEVELTRIG = 3;
+const int WQUALITY = 15;
+const int WTEMP = 16;
 
 Servo servo;
 
@@ -32,7 +35,10 @@ void setup() {
   servo.attach(9);
   servo.write(0);
 
-  pinMode(WHEIGHT, INPUT);
+  pinMode(WQUALITY, INPUT);
+  pinMode(WLEVELTRIG, OUTPUT);
+  pinMode(WLEVELECHO, INPUT);
+  pinMode(WTEMP, INPUT);
 
 
 }
@@ -127,7 +133,10 @@ void loop() {
   
 
   count ++;
-  response = "{\"waterLevel\" : "+ (String)analogRead(A0) + ", " + "\"test_val\"" + " : " + (String)order + "}";
+
+
+
+  response = "{\"waterLevel\" : "+ (String)analogRead(WLEVEL) + ", " + "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", " + "\"test_val\"" + " : " + (String)order + "}";
   Serial.println(response);
   
   

@@ -76,7 +76,7 @@ class iotComputer(QMainWindow, from_class):
 
         
         self.temperature = 0. # 수온
-        self.waterQulity = 0. # 수질 수치
+        self.waterQuality = 0. # 수질 수치
         self.waterLevel = 0. # 수위
         self.temperatureRange = 0. # 수온 범위
         self.lightIsOn = False # 전구 상태
@@ -94,6 +94,7 @@ class iotComputer(QMainWindow, from_class):
         self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
 
         self.levelPlot = self.levelGraph.plot(pen = "b")
+        self.turbidityPlot = self.qualityGraph.plot(pen = "r")
         
 
 
@@ -116,26 +117,24 @@ class iotComputer(QMainWindow, from_class):
         if self.pySerial.in_waiting != 0:
             
             try:
-                decodedDict = self.pySerial.readline().decode()#eval(self.pySerial.readline().decode())
-                print(self.commendList, decodedDict)
+                decodedDict = eval(self.pySerial.readline().decode())
+                print(self.commendList, decodedDict, type(decodedDict))
                 # self.temperature = 0. ### 이후 아두이노 input으로 대체
-                # self.waterQulity = decodedDict["test_val"]
-                # self.waterLevel = decodedDict["waterLevel"]
+                self.waterQulity = decodedDict['"waterTurbidity"']
+                self.waterLevel = decodedDict['"waterLevel"']
             except SyntaxError:
                 pass
                             
-            self.tempNowLabel.setText(str(self.temperature))
-
                 #print("error")
             
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
             self.tempNowLabel.setText(str(self.temperature) + "°C")
 
-            self.waterLevelLabel.setText(str(self.waterLevel))
-            self.waterQulityLabel.setText(str(self.waterQulity) + "mg")
+            self.waterLevelLabel.setText(str(self.waterLevel) + "cm")
+            self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
             self.showStatusOfFishbowl()
             
-            #self.saveData()
+            self.saveData()
         
         
 
@@ -160,7 +159,7 @@ class iotComputer(QMainWindow, from_class):
             self.levelStateLabel.setText("적합")
 
 
-        if self.waterQulity > 300 : # 센서도착시 확인후 변경
+        if self.waterQuality > 300 : # 센서도착시 확인후 변경
             text += " 물 교체 필요"
             self.qulityStateLabel.setText("부적합")
         else:
@@ -180,7 +179,7 @@ class iotComputer(QMainWindow, from_class):
         )
         
         cur = conn.cursor(buffered = True)
-        sql = f"insert into aquarium (time, water_height) values(current_timestamp, {self.waterLevel})"
+        sql = f"insert into aquarium (time, water_height, water_quality) values(current_timestamp, {self.waterLevel}, {self.waterQuality})"
         cur.execute(sql)
         conn.commit()
         
@@ -201,17 +200,19 @@ class iotComputer(QMainWindow, from_class):
         result = cur.fetchall()
         conn.close()
         
-        self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level"])
+        self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level", "water_quality"])
         self.posixTimeList = self.aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
         self.dataLength = len(self.posixTimeList)
-        self.drawChart(self.posixTimeList, self.aquariumDf["water_level"])
+        self.drawChart(self.posixTimeList, self.aquariumDf)
         self.sendSignalForWater()
 
     
         
     def drawChart(self, x, y):
-        self.levelGraph.plot(x, y, pen = pg.mkPen(color = "r", width = 2))
+        self.levelGraph.plot(x, y["water_level"], pen = pg.mkPen(color = "b", width = 2))
         self.levelGraph.getPlotItem().hideAxis("bottom")
+        self.qualityGraph.plot(x, y["water_quality"], pen = pg.mkPen(color = "r", width = 2))
+        self.qualityGraph.getPlotItem().hideAxis("bottom")
 
 
 

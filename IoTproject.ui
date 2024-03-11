@@ -476,7 +476,7 @@ border-radius: 20px;</string>
         </widget>
        </item>
        <item row="1" column="0" rowspan="2">
-        <widget class="QLabel" name="waterQulityLabel">
+        <widget class="QLabel" name="waterQualityLabel">
          <property name="font">
           <font>
            <family>Roboto Thin</family>
@@ -949,11 +949,7 @@ border-radius: 10px;</string>
        <string>시간 제거</string>
       </property>
      </widget>
-
-
-
      <widget class="QLabel" name="mealTimeLabel">
-
       <property name="geometry">
        <rect>
         <x>110</x>
@@ -977,11 +973,7 @@ border-radius: 10px;</string>
        <string>배식 시간</string>
       </property>
      </widget>
-
-
-
      <widget class="QLabel" name="mealCBLabel">
-
       <property name="geometry">
        <rect>
         <x>13</x>
