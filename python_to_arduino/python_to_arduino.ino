@@ -10,7 +10,7 @@ const int WTEMP = 16;
 const int pumpPin = 12;
 
 const int height = 30; 
-const int proper_level = 15;
+const int proper_level = 24;
 
 Servo servo;
 
@@ -240,5 +240,5 @@ void loop() {
     
     
   
-  delay(1000);
+  delay(200);
 }
