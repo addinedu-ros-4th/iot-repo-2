@@ -133,7 +133,7 @@ class iotComputer(QMainWindow, from_class):
                 decodedDict = eval(self.pySerial.readline().decode())
 
 
-                self.waterQulity = decodedDict["waterQuality"]
+                self.waterQuality = decodedDict["waterQuality"]
                 self.waterLevel = decodedDict["waterLevel"]
                 self.waterTemperature = decodedDict["waterTemperature"]
                 
