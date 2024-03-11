@@ -181,10 +181,9 @@ void loop() {
   distance = ((float)(340 * duration) / 10000) / 2; 
   
 
-  response =  "{\"waterLevel\" : "+ distance + ", " + 
+  response =  "{\"waterLevel\" : " + (String)distance + ", " + 
   "\"waterTemperature\" : " + (String)getTemp() + ", " + 
-  "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", " + 
-  "\"test_val\"" + " : " + (String)order + "}";
+  "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + "}";
 
   Serial.println(response);
   
@@ -223,5 +222,5 @@ void loop() {
     
     
   
-  delay(500);
+  delay(1000);
 }

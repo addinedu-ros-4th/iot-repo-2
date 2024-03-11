@@ -31,6 +31,9 @@ from PyQt5.QtCore import *
 from PyQt5 import uic
 import pyqtgraph as pg
 
+from datetime import datetime
+from PyQt5 import QtCore
+
 
     
 class Thread(QThread) :
@@ -56,14 +59,12 @@ class iotComputer(QMainWindow, from_class):
         super().__init__()
         self.setupUi(self)
         self.setWindowTitle("control_app")
-
-        self.resize(1259, 807)
         self.setGeometry(0, 0, 1260, 800)
-        self.pySerial = sri.Serial(port="/dev/ttyACM1", baudrate=9600)# serial - 이거 잠깐 수정함 sy 
+        self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)
         
         # db 초기화
         conn = mysql.connector.connect(
-            user = "root",
+            user = "joe",
             password = "0000",
             database = "amrbase"
         )
@@ -122,20 +123,6 @@ class iotComputer(QMainWindow, from_class):
 
         
         self.inputThread.update.connect(self.updateInput) # link Thread
-        
-        #sy -- 현 시간 디스플레이하기 
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.show_time)
-        self.timer.start(1000)
-        self.show_time()
-
-    def show_time(self): #현재 시간 디스플레이 
-        time = QtCore.QTime.currentTime()
-        today = datetime.today()
-        today = today.strftime('%Y년 %m월 %d일')+' '
-        self.currentTime = time.toString('hh:mm:ss')
-        self.fishbowlHistoryLabel.setText(today + self.currentTime)    
-    #--sy 
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
@@ -146,13 +133,14 @@ class iotComputer(QMainWindow, from_class):
                 decodedDict = eval(self.pySerial.readline().decode())
 
 
-                self.waterQulity = decodedDict["waterQUality"]
+                self.waterQulity = decodedDict["waterQuality"]
                 self.waterLevel = decodedDict["waterLevel"]
                 self.waterTemperature = decodedDict["waterTemperature"]
                 
                 print(self.commendList, decodedDict)
+                
             except SyntaxError:
-                pass
+                print("error")
                 
 
             
