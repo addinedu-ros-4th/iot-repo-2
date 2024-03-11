@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import uic
+from datetime import datetime
 
 
 
@@ -70,11 +71,9 @@ class iotComputer(QMainWindow, from_class):
         self.inputThread.running = True
         self.inputThread.start()
         
-        self.commendList = [0, 0, 0, 0, 0, 0] # meal, water, light, meal_count, water_level, servo_angle
-
-
+        self.commendList = [0,0,0,0,0,0,""] # meal, water, light, meal_count, water_level, servo_angle , meal_time
         
-
+        self.model = self.mealList.model()
 
         self.mealButton.clicked.connect(self.sendSignalFormeal)
         self.waterButton.clicked.connect(self.sendSignalForWater)
@@ -82,18 +81,18 @@ class iotComputer(QMainWindow, from_class):
         self.plusMealButton.clicked.connect(self.plusMealPlan)
 
 
-
         self.inputThread.update.connect(self.updateInput) # link Thread
-        
+
+        self.inputThread.update.connect(self.mealTimeSignal)
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
-            
+            print(self.pySerial.readline().decode())
             try:
                 self.temperature = 0. ### 이후 아두이노 input으로 대체
                 self.waterQulity = 0.
-                self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
+                # self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
             except SyntaxError:
                 pass
         
@@ -103,13 +102,12 @@ class iotComputer(QMainWindow, from_class):
             self.waterQulityLabel.setText(str(self.waterQulity))
         
 
-    
-
-
 
     def sendSignalFormeal(self) : # 배식신호 발송 함수
+        self.commendList[0] = 1
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
+        self.commendList[0] = 0
 
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
@@ -119,12 +117,54 @@ class iotComputer(QMainWindow, from_class):
         self.commendList[1] = 0
 
 
+
+    def mealTimeSignal(self): # 배식 시간이 되면 배식 시간 제거
+        # 현재 시간을 가져옴
+        Now = QTime.currentTime().toString("h:mm AP")
+
+        # 모델이 없으면 리턴
+        if self.model is None:
+            return
+
+        # 모델에서 모든 항목을 확인하며 배식 시간을 확인
+        for row in range(self.model.rowCount()):
+            index = self.model.index(row, 0)
+            item_text = self.model.data(index)
+
+            if item_text is None:
+                return
+
+            time_str = item_text.split("시간:")[1].strip()
+            
+            if time_str == Now:
+                
+                # 해당 항목 제거
+                self.model.removeRow(row)
+                self.mealList.setModel(self.model)
+
+    
     def plusMealPlan(self) : # 배식 시간 추가 함수
+
+        # 현재 시간을 가져옴
+        Now = QTime.currentTime()
+
         Feed_number = self.mealCB.currentText()
         Feed_time = self.timeEdit.text()
+
+        # 설정할 시간이 현재시간보다 이전이면 리턴
+        time0 = QTime.fromString(Feed_time, "h:mm AP")
+        if time0 < Now:
+               return
+
         meal_item_text = f"횟수: {Feed_number}, 시간: {Feed_time}"
 
-        self.model = self.mealList.model()
+        self.commendList[3] = Feed_number
+        self.commendList[6] = Feed_time
+        self.sendSignalFormeal()
+        self.commendList[3] = 0
+        self.commendList[6] = ""
+        
+        
         if self.model is None:  # 모델이 없을 경우 새 모델 생성
             self.model = QStandardItemModel()
 
@@ -140,7 +180,8 @@ class iotComputer(QMainWindow, from_class):
         inserted = False
         for row in range(self.model.rowCount()):
             index = self.model.index(row, 0)
-            item_time = self.model.data(index).split("시간:")[1].strip()  # 시간 정보 추출
+            item_time = self.model.data(index).split("시간:")[1].strip() # 시간 정보 추출
+            item_number = self.model.data(index).split("횟수:")[1].strip().split(",")[0].strip  
 
             # AM , PM 비교
             time1 = QTime.fromString(Feed_time, "h:mm AP")
@@ -151,13 +192,15 @@ class iotComputer(QMainWindow, from_class):
                 self.model.insertRow(row, item)
                 inserted = True
                 break
-
+        
         # 만약 모든 아이템의 시간보다 크다면 마지막에 삽입
         if not inserted:
             self.model.appendRow(item)
 
         self.mealList.setModel(self.model)
+
         
+
 
     def minusMealPlan(self) : # 배식시간 제거 함수
         selected_indexes = self.mealList.selectedIndexes()  # 선택된 항목의 인덱스 가져오기
