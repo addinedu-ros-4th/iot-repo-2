@@ -168,14 +168,14 @@ class iotComputer(QMainWindow, from_class):
             self.tempStateLabel.setText("적합")
 
 
-        if self.waterLevel < 500 : # 센서도착시 확인후 변경
+        if self.waterLevel > 8 : 
             text += " 물 보충 필요"
             self.levelStateLabel.setText("부적합")
         else : 
             self.levelStateLabel.setText("적합")
 
 
-        if self.waterQuality > 300 : # 센서도착시 확인후 변경
+        if self.waterQuality < 600 : # 센서도착시 확인후 변경
             text += " 물 교체 필요"
             self.qulityStateLabel.setText("부적합")
         else:
