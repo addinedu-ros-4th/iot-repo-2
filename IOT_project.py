@@ -75,7 +75,7 @@ class iotComputer(QMainWindow, from_class):
         # conn.close()
 
         
-        self.temperature = 0. # 수온
+        self.waterTemperature = 0. # 수온
         self.waterQuality = 0. # 수질 수치
         self.waterLevel = 0. # 수위
         self.temperatureRange = 0. # 수온 범위
@@ -94,7 +94,8 @@ class iotComputer(QMainWindow, from_class):
         self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
 
         self.levelPlot = self.levelGraph.plot(pen = "b")
-        self.turbidityPlot = self.qualityGraph.plot(pen = "r")
+        self.qualityPlot = self.qualityGraph.plot(pen = "g")
+        self.tempPlot = self.tempGraph.plot(pen = "r")
         
 
 
@@ -118,18 +119,20 @@ class iotComputer(QMainWindow, from_class):
             
             try:
                 decodedDict = eval(self.pySerial.readline().decode())
-                print(self.commendList, decodedDict, type(decodedDict))
-                # self.temperature = 0. ### 이후 아두이노 input으로 대체
-                self.waterQulity = decodedDict['"waterTurbidity"']
-                self.waterLevel = decodedDict['"waterLevel"']
+
+
+                self.waterQulity = decodedDict["waterQUality"]
+                # self.waterLevel = decodedDict["waterLevel"]
+                self.waterTemperature = decodedDict["waterTemperature"]
+                
+                print(self.commendList, decodedDict)
             except SyntaxError:
                 pass
-                            
-                #print("error")
+                
+
             
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
-            self.tempNowLabel.setText(str(self.temperature) + "°C")
-
+            self.tempNowLabel.setText(str(self.waterTemperature) + "°C")
             self.waterLevelLabel.setText(str(self.waterLevel) + "cm")
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
             self.showStatusOfFishbowl()
@@ -142,10 +145,10 @@ class iotComputer(QMainWindow, from_class):
         text = "어항상태 -"
         
 
-        if self.temperature > 40 : # 
+        if self.waterTemperature > 40 : # 
             text += " 냉각 필요"
             self.tempStateLabel.setText("부적합")
-        elif self.temperature < 20 : # 
+        elif self.waterTemperature < 20 : # 
             text += " 보온 필요"
             self.tempStateLabel.setText("부적합")
         else :
@@ -179,7 +182,8 @@ class iotComputer(QMainWindow, from_class):
         )
         
         cur = conn.cursor(buffered = True)
-        sql = f"insert into aquarium (time, water_height, water_quality) values(current_timestamp, {self.waterLevel}, {self.waterQuality})"
+        sql = f"insert into aquarium (time, water_height, water_quality, water_temperature)\
+        values(current_timestamp, {self.waterLevel}, {self.waterQuality}, {self.waterTemperature})"
         cur.execute(sql)
         conn.commit()
         
@@ -200,7 +204,7 @@ class iotComputer(QMainWindow, from_class):
         result = cur.fetchall()
         conn.close()
         
-        self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level", "water_quality"])
+        self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level", "water_quality", "water_temperature"])
         self.posixTimeList = self.aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
         self.dataLength = len(self.posixTimeList)
         self.drawChart(self.posixTimeList, self.aquariumDf)
@@ -211,8 +215,10 @@ class iotComputer(QMainWindow, from_class):
     def drawChart(self, x, y):
         self.levelGraph.plot(x, y["water_level"], pen = pg.mkPen(color = "b", width = 2))
         self.levelGraph.getPlotItem().hideAxis("bottom")
-        self.qualityGraph.plot(x, y["water_quality"], pen = pg.mkPen(color = "r", width = 2))
+        self.qualityGraph.plot(x, y["water_quality"], pen = pg.mkPen(color = "g", width = 2))
         self.qualityGraph.getPlotItem().hideAxis("bottom")
+        self.tempGraph.plot(x, y["water_temperature"], pen = pg.mkPen(color = "r", width = 2))
+        self.tempGraph.getPlotItem().hideAxis("bottom")
 
 
 
