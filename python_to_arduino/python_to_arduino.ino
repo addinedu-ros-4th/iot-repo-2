@@ -89,7 +89,7 @@ void decode_input(String orders) {
   
   meal = orders.substring(0, orders.indexOf(","));
   sub_string = orders.substring(orders.indexOf(",") + meal.length());
-
+  Serial.println(sub_string);
   water = sub_string.substring(1, sub_string.indexOf(","));
   sub_string = sub_string.substring(sub_string.indexOf(",") + water.length());
   
@@ -182,6 +182,8 @@ void loop() {
 
   response =  "{\"waterLevel\" : " + (String)level + ", " + 
   "\"waterTemperature\" : " + (String)getTemp() + ", " + 
+  "\"meal\" : " + (String)meal + ", " + 
+  "\"water\" : " + (String)water + ", " + 
   "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + "}";
 
   Serial.println(response);
@@ -210,13 +212,13 @@ void loop() {
   if (water =="1") {
     analogWrite(pumpPin, 255);
     water_count = 0;
-    water = "0"
+    water = "0";
     //Serial.println("pump on");
   }
   else if (level >= proper_level && water == "0") {
     analogWrite(pumpPin, 0);
   }
-  else if (water_count <= 3 && water == "0") {
+  else if (water_count == 20 && water == "0") {
     analogWrite(pumpPin, 0);
   }
 
@@ -224,9 +226,10 @@ void loop() {
     servo.write(servo_angle);
     servo_is_activated = true;
     count = 0;
+    meal = "0";
     
   }
-  else if (servo_is_activated == true && count >= 20){
+  else if (servo_is_activated == true && count >= 2){
     servo.write(0);
     servo_is_activated = false;
     meal = "0";
@@ -247,5 +250,5 @@ void loop() {
   }
     
   
-  delay(200);
+  delay(500);
 }

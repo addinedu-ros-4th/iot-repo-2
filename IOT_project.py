@@ -38,6 +38,7 @@ from PyQt5 import QtCore
     
 class Thread(QThread) :
     update = pyqtSignal()
+    update2 = pyqtSignal()
     def __init__(self, sec=0, parent=None):
         super().__init__()
         self.main = parent
@@ -104,6 +105,10 @@ class iotComputer(QMainWindow, from_class):
         self.inputThread.running = True
         self.inputThread.start()
         
+        self.dbThread = Thread(self) # Thread 
+        self.dbThread.running = True
+        self.dbThread.start()
+        
         self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
 
         self.levelPlot = self.levelGraph.plot(pen = "b")
@@ -123,6 +128,7 @@ class iotComputer(QMainWindow, from_class):
 
         
         self.inputThread.update.connect(self.updateInput) # link Thread
+        self.dbThread.update2.connect(self.saveData)
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
@@ -140,7 +146,7 @@ class iotComputer(QMainWindow, from_class):
                 print(self.commendList, decodedDict)
                 
             except SyntaxError:
-                print("error")
+                print(self.pySerial.readline().decode())
                 
 
             
@@ -150,7 +156,7 @@ class iotComputer(QMainWindow, from_class):
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
             self.showStatusOfFishbowl()
             
-            self.saveData()
+            
         
         
 
@@ -223,7 +229,7 @@ class iotComputer(QMainWindow, from_class):
         self.posixTimeList = self.aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
         self.dataLength = len(self.posixTimeList)
         self.drawChart(self.posixTimeList, self.aquariumDf)
-        self.sendSignalForWater()
+       
 
     
         
