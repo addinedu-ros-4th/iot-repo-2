@@ -115,14 +115,14 @@ class iotComputer(QMainWindow, from_class):
         if self.pySerial.in_waiting != 0:
             
             try:
-                decodedDict = self.pySerial.readline().decode()#eval(self.pySerial.readline().decode())
+                decodedDict = eval(self.pySerial.readline().decode())
                 print(self.commendList, decodedDict)
-                # self.temperature = 0. ### 이후 아두이노 input으로 대체
                 # self.waterQulity = decodedDict["test_val"]
-                # self.waterLevel = decodedDict["waterLevel"]
+                self.waterLevel = decodedDict["waterLevel"]
+                self.temperature = decodedDict["temperature"] ### 이후 아두이노 input으로 대체
             except SyntaxError:
                 pass
-                #print("error")
+                
 
             
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
