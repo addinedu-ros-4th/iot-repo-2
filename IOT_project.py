@@ -58,6 +58,7 @@ class iotComputer(QMainWindow, from_class):
         super().__init__()
         self.setupUi(self)
         self.setWindowTitle("control_app")
+        self.resize(1259, 807)
         
         self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)# serial
         
@@ -112,9 +113,7 @@ class iotComputer(QMainWindow, from_class):
                 self.waterLevel = eval(self.pySerial.readline().decode())["waterLevel"]
             except SyntaxError:
                 pass
-                
-            # self.saveData()
-            
+                            
             self.tempNowLabel.setText(str(self.temperature))
             self.waterLevelLabel.setText(str(self.waterLevel))
             self.waterQulityLabel.setText(str(self.waterQulity))
@@ -151,10 +150,11 @@ class iotComputer(QMainWindow, from_class):
         result = cur.fetchall()
         conn.close()
         
-        aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level"])
-        self.posixTimeList = aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
+        self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level"])
+        self.posixTimeList = self.aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
         self.dataLength = len(self.posixTimeList)
-        self.drawChart(self.posixTimeList, aquariumDf["water_level"])
+        self.drawChart(self.posixTimeList, self.aquariumDf["water_level"])
+        self.sendSignalForWater()
     
         
     def drawChart(self, x, y):
@@ -232,10 +232,6 @@ class iotComputer(QMainWindow, from_class):
             self.commendList[2] = 0
             commend = str(self.commendList).replace("[", "").replace("]", "")
             self.pySerial.write(commend.encode())
-
-
-
-
 
 
 def main() :
