@@ -60,18 +60,18 @@ class iotComputer(QMainWindow, from_class):
         self.setGeometry(0, 0, 1260, 800)
         self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)# serial
         
-        # db 초기화
-        # conn = mysql.connector.connect(
-        #     user = "joe",
-        #     password = "0000",
-        #     database = "amrbase"
-        # )
+        #db 초기화
+        conn = mysql.connector.connect(
+            user = "joe",
+            password = "0000",
+            database = "amrbase"
+        )
         
-        # cur = conn.cursor(buffered = True)
-        # sql = "delete from aquarium"
-        # cur.execute(sql)
-        # conn.commit()
-        # conn.close()
+        cur = conn.cursor(buffered = True)
+        sql = "delete from aquarium"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
 
         
         self.temperature = 0. # 수온
@@ -116,10 +116,10 @@ class iotComputer(QMainWindow, from_class):
             
             try:
                 decodedDict = eval(self.pySerial.readline().decode())
-                print(self.commendList, decodedDict)
-                # self.waterQulity = decodedDict["test_val"]
+                # print(self.commendList, decodedDict) # 확인용
+                # self.waterQulity = decodedDict["waterQulity"]
                 self.waterLevel = decodedDict["waterLevel"]
-                self.temperature = decodedDict["temperature"] ### 이후 아두이노 input으로 대체
+                self.temperature = decodedDict["temperature"]
             except SyntaxError:
                 pass
                 
@@ -131,7 +131,7 @@ class iotComputer(QMainWindow, from_class):
             self.waterQulityLabel.setText(str(self.waterQulity) + "mg")
             self.showStatusOfFishbowl()
             
-            #self.saveData()
+            self.saveData()
         
         
 
@@ -156,7 +156,7 @@ class iotComputer(QMainWindow, from_class):
             self.levelStateLabel.setText("적합")
 
 
-        if self.waterQulity > 300 : # 센서도착시 확인후 변경
+        if self.waterQulity > 200 : # 센서도착시 확인후 변경
             text += " 물 교체 필요"
             self.qulityStateLabel.setText("부적합")
         else:
