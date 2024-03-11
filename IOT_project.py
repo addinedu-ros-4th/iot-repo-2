@@ -247,9 +247,8 @@ class iotComputer(QMainWindow, from_class):
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
         self.commendList[1] = 1 
         self.sendSignal()
-        time.sleep(5)
         self.commendList[1] = 0
-        self.sendSignal()
+
         
 
 

@@ -18,7 +18,7 @@ bool servo_is_activated = false;
 
 int count = 0;
 int servo_angle = 150;
-
+int water_count = 0;
 
 OneWire ds(2); 
 
@@ -168,7 +168,7 @@ void loop() {
   
 
   count ++;
-
+  water_count++;
   float duration, distance;
   digitalWrite(WLEVELTRIG, LOW);
   delayMicroseconds(2);
@@ -209,9 +209,14 @@ void loop() {
 //water sign o 
   if (water =="1") {
     analogWrite(pumpPin, 255);
+    water_count = 0;
+    water = "0"
     //Serial.println("pump on");
   }
-  else if (level >= proper_level && water =="0") {
+  else if (level >= proper_level && water == "0") {
+    analogWrite(pumpPin, 0);
+  }
+  else if (water_count <= 3 && water == "0") {
     analogWrite(pumpPin, 0);
   }
 
@@ -237,7 +242,9 @@ void loop() {
   if (count >= 1000) {
     count = 0;
   }
-    
+  if (water_count >= 500) {
+    water_count = 0;
+  }
     
   
   delay(1000);
