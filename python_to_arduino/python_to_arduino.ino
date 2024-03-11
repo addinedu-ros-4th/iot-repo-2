@@ -7,12 +7,18 @@ const int WLEVELTRIG = 3;
 const int WQUALITY = 15;
 const int WTEMP = 16;
 
+const int pumpPin = 12;
+
+const int height = 30; 
+const int proper_level = 15;
+
 Servo servo;
 
 bool servo_is_activated = false;
 
 int count = 0;
 int servo_angle = 150;
+
 
 OneWire ds(2); 
 
@@ -29,8 +35,6 @@ String plan_list = "0";
 
 String order = "";
 String response = "";
-
-
 
 String sub_string = "";
 void setup() {
@@ -160,12 +164,6 @@ void plan_is_now() {
 
 
 
-
-
-
-
-
-
 void loop() {
   
 
@@ -178,16 +176,15 @@ void loop() {
   delayMicroseconds(10);
   digitalWrite(WLEVELTRIG, LOW);
   duration = pulseIn(WLEVELECHO, HIGH);
-  distance = ((float)(340 * duration) / 10000) / 2; 
+  distance = ((float)(340 * duration) / 10000) / 2; //distance : sensor~surface distance -> water level = bowl height - distance 
+  float level = height - distance; 
   
 
-  response =  "{\"waterLevel\" : " + (String)distance + ", " + 
+  response =  "{\"waterLevel\" : " + (String)level + ", " + 
   "\"waterTemperature\" : " + (String)getTemp() + ", " + 
   "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + "}";
 
   Serial.println(response);
-  
-  
    
 
   if (Serial.available()) {
@@ -196,7 +193,27 @@ void loop() {
     
   }
   //decode_input("0, 0, 0, '4,4', 0, 0, 11430000, '11460000,54660000'"); // test_data
-    
+
+
+//water level pumping 
+  if (level < proper_level) {
+    analogWrite(pumpPin, 255);
+    //Serial.println("water on");
+  }
+  else {
+    analogWrite(pumpPin, 0);
+    //Serial.println("water off");
+  } 
+
+
+//water sign o 
+  if (water =="1") {
+    analogWrite(pumpPin, 255);
+    //Serial.println("pump on");
+  }
+  else if (level >= proper_level && water =="0") {
+    analogWrite(pumpPin, 0);
+  }
 
   if (meal == "1") {
     servo.write(servo_angle);
@@ -213,6 +230,7 @@ void loop() {
     plan_is_now();
   }
 
+  
 
 
 
