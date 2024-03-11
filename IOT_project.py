@@ -32,7 +32,6 @@ from PyQt5 import uic
 import pyqtgraph as pg
 
 
-
     
 class Thread(QThread) :
     update = pyqtSignal()
@@ -57,22 +56,23 @@ class iotComputer(QMainWindow, from_class):
         super().__init__()
         self.setupUi(self)
         self.setWindowTitle("control_app")
+
         self.resize(1259, 807)
         self.setGeometry(0, 0, 1260, 800)
-        self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)# serial
+        self.pySerial = sri.Serial(port="/dev/ttyACM1", baudrate=9600)# serial - 이거 잠깐 수정함 sy 
         
         # db 초기화
-        # conn = mysql.connector.connect(
-        #     user = "joe",
-        #     password = "0000",
-        #     database = "amrbase"
-        # )
+        conn = mysql.connector.connect(
+            user = "root",
+            password = "0000",
+            database = "amrbase"
+        )
         
-        # cur = conn.cursor(buffered = True)
-        # sql = "delete from aquarium"
-        # cur.execute(sql)
-        # conn.commit()
-        # conn.close()
+        cur = conn.cursor(buffered = True)
+        sql = "delete from aquarium"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
 
         
         self.waterTemperature = 0. # 수온
@@ -81,8 +81,20 @@ class iotComputer(QMainWindow, from_class):
         self.temperatureRange = 0. # 수온 범위
         self.lightIsOn = False # 전구 상태
         self.mealCount = 0
+        
         self.planList = ""
         self.mealCountList = ""
+
+        self.totalHeight = 20 #수조 높이 - 수조높이랑 적정값들은 일단 임의로 설정함 
+        
+        self.properHeight = 16 # 적정 수위 -  
+        self.properTemperature = 20 #적정 온도 
+        self.properQuality = 15 # 적정 tds 
+        
+        self.levelState ='수위 적절' #상태창에 띄우는 어항 상태값- 디폴트는 적합으로 
+        self.temperatureState='온도 적절/ '
+        self.qualityState='수질 적절/ ' #--sy 
+
 
         startTime = time.strftime('%H:%M:%S').split(":")
         self.startTimeTypeMilliSecond = (int(startTime[0]) * 60**2 + int(startTime[1]) * 60 + int(startTime[2])) * 1000 # 시작시 시간(단위 : ms)
@@ -96,7 +108,6 @@ class iotComputer(QMainWindow, from_class):
         self.levelPlot = self.levelGraph.plot(pen = "b")
         self.qualityPlot = self.qualityGraph.plot(pen = "g")
         self.tempPlot = self.tempGraph.plot(pen = "r")
-        
 
 
         commend = str(self.commendList).replace("[", "").replace("]", "")
@@ -112,17 +123,31 @@ class iotComputer(QMainWindow, from_class):
         
         self.inputThread.update.connect(self.updateInput) # link Thread
         
+        #sy -- 현 시간 디스플레이하기 
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.show_time)
+        self.timer.start(1000)
+        self.show_time()
+
+    def show_time(self): #현재 시간 디스플레이 
+        time = QtCore.QTime.currentTime()
+        today = datetime.today()
+        today = today.strftime('%Y년 %m월 %d일')+' '
+        self.currentTime = time.toString('hh:mm:ss')
+        self.fishbowlHistoryLabel.setText(today + self.currentTime)    
+    #--sy 
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
             
             try:
+
                 decodedDict = eval(self.pySerial.readline().decode())
 
 
                 self.waterQulity = decodedDict["waterQUality"]
-                # self.waterLevel = decodedDict["waterLevel"]
+                self.waterLevel = decodedDict["waterLevel"]
                 self.waterTemperature = decodedDict["waterTemperature"]
                 
                 print(self.commendList, decodedDict)
@@ -184,6 +209,7 @@ class iotComputer(QMainWindow, from_class):
         cur = conn.cursor(buffered = True)
         sql = f"insert into aquarium (time, water_height, water_quality, water_temperature)\
         values(current_timestamp, {self.waterLevel}, {self.waterQuality}, {self.waterTemperature})"
+
         cur.execute(sql)
         conn.commit()
         
@@ -204,6 +230,7 @@ class iotComputer(QMainWindow, from_class):
         result = cur.fetchall()
         conn.close()
         
+
         self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level", "water_quality", "water_temperature"])
         self.posixTimeList = self.aquariumDf["datetime"].apply(lambda ts: ts.timestamp())
         self.dataLength = len(self.posixTimeList)
@@ -222,6 +249,7 @@ class iotComputer(QMainWindow, from_class):
 
 
 
+
     def sendSignalFormeal(self) : # 배식신호 발송 함수
         self.commendList[0] = 1
         self.sendSignal()
@@ -232,6 +260,7 @@ class iotComputer(QMainWindow, from_class):
         self.commendList[1] = 1
         self.sendSignal()
         self.commendList[1] = 0
+        
 
 
     def planSignal(self, Feed_time, Feed_number) :

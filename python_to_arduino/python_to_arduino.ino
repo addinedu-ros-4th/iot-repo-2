@@ -2,7 +2,7 @@
 
 #include <Servo.h>
 
-const int WLEVELECHO = 14;
+const int WLEVELECHO = 4;
 const int WLEVELTRIG = 3;
 const int WQUALITY = 15;
 const int WTEMP = 16;
@@ -171,13 +171,20 @@ void loop() {
 
   count ++;
 
-  response = "{\"temperature\" : " + (String)getTemp() + ", " + 
+  float duration, distance;
+  digitalWrite(WLEVELTRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(WLEVELTRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(WLEVELTRIG, LOW);
+  duration = pulseIn(WLEVELECHO, HIGH);
+  distance = ((float)(340 * duration) / 10000) / 2; 
+  
+
+  response =  "{\"waterLevel\" : "+ distance + ", " + 
+  "\"waterTemperature\" : " + (String)getTemp() + ", " + 
   "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", " + 
   "\"test_val\"" + " : " + (String)order + "}";
-  // "{\"waterLevel\" : "+ (String)analogRead(WLEVEL) + ", " + 
-  // "\"temperature\" : " + (String)getTemp() + ", " + 
-  // "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", " + 
-  // "\"test_val\"" + " : " + (String)order + "}";
 
   Serial.println(response);
   
