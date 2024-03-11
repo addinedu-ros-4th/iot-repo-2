@@ -86,7 +86,7 @@ class iotComputer(QMainWindow, from_class):
         self.planList = ""
         self.mealCountList = ""
 
-        self.totalHeight = 20 #수조 높이 - 수조높이랑 적정값들은 일단 임의로 설정함 
+        
         
         self.properHeight = 16 # 적정 수위 -  
         self.properTemperature = 20 #적정 온도 
@@ -168,14 +168,14 @@ class iotComputer(QMainWindow, from_class):
             self.tempStateLabel.setText("적합")
 
 
-        if self.waterLevel < 500 : # 센서도착시 확인후 변경
+        if self.waterLevel > 8 : 
             text += " 물 보충 필요"
             self.levelStateLabel.setText("부적합")
         else : 
             self.levelStateLabel.setText("적합")
 
 
-        if self.waterQuality > 300 : # 센서도착시 확인후 변경
+        if self.waterQuality < 600 : # 센서도착시 확인후 변경
             text += " 물 교체 필요"
             self.qulityStateLabel.setText("부적합")
         else:
@@ -245,9 +245,11 @@ class iotComputer(QMainWindow, from_class):
 
 
     def sendSignalForWater(self) : # 물 추가신호 발송 함수
-        self.commendList[1] = 1
+        self.commendList[1] = 1 
         self.sendSignal()
+        time.sleep(5)
         self.commendList[1] = 0
+        self.sendSignal()
         
 
 

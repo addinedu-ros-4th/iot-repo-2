@@ -134,7 +134,7 @@
          <property name="font">
           <font>
            <family>Roboto Thin</family>
-           <pointsize>36</pointsize>
+           <pointsize>20</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -313,7 +313,7 @@ border-radius: 20px;</string>
          <property name="font">
           <font>
            <family>Roboto Thin</family>
-           <pointsize>36</pointsize>
+           <pointsize>20</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -480,7 +480,7 @@ border-radius: 20px;</string>
          <property name="font">
           <font>
            <family>Roboto Thin</family>
-           <pointsize>36</pointsize>
+           <pointsize>20</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
