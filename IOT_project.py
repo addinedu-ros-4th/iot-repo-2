@@ -72,18 +72,27 @@ class iotComputer(QMainWindow, from_class):
         ######
 
 
-        
-        conn = mysql.connector.connect( # db 초기화
+        list_view = QListView()
+        self.properQualityCB.setView(list_view) 
+        self.properQualityCB.view().setResizeMode(QListView.Adjust)
+        for i in range(41) :
+            self.properTemperatureCB.addItem(str(i))
+
+        for i in range(101) :
+            self.properQualityCB.addItem(str(i))
+
+
+        self.conn = mysql.connector.connect( # db 초기화
             user = self.user,
             password = self.password,
             database = self.database
         )
         
-        cur = conn.cursor(buffered = True)
+        self.cul = self.conn.cursor(buffered = True)
         sql = "delete from aquarium"
-        cur.execute(sql)
-        conn.commit()
-        conn.close()
+        self.cul.execute(sql)
+        self.conn.commit()
+        self.count = 0
 
         
         self.waterTemperature = 0. # 수온
@@ -126,11 +135,10 @@ class iotComputer(QMainWindow, from_class):
         self.pySerial.write(commend.encode())
         
 
-        self.mealButton.clicked.connect(self.sendSignalFormeal)
-        self.waterButton.clicked.connect(self.sendSignalForWater)
+        
         self.minusMealButton.clicked.connect(self.minusMealPlan)
         self.plusMealButton.clicked.connect(self.plusMealPlan)
-
+        self.saveSettingButton.clicked.connect(self.saveSettingData)
         
         
         self.inputThread.update.connect(self.updateInput) # link Thread
@@ -139,7 +147,6 @@ class iotComputer(QMainWindow, from_class):
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
-            print(self.properTemperature)
             try:
 
                 decodedDict = eval(self.pySerial.readline().decode())
@@ -154,80 +161,72 @@ class iotComputer(QMainWindow, from_class):
             except SyntaxError:
                 print(self.pySerial.readline().decode())
                 
-
             
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
             self.tempNowLabel.setText(str(self.waterTemperature) + "°C")
             self.waterLevelLabel.setText(str(self.waterLevel) + "cm")
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
             self.showStatusOfFishbowl()
-            self.saveData()
+            self.count += 1
+            if self.count <= 60 :
+                self.saveData()
+                self.count = 0
             
             
         
     def getSettingData(self) : 
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
-        
-
-
-        cur = conn.cursor(buffered = True)
         sql = "select * from settingData"
-        cur.execute(sql)
-        result = cur.fetchall()
-        conn.close()
-        settingDf = pd.DataFrame(result, columns= ["properHeight", "properTemperature", "properTemperatureRange", "properQuality"])
+        self.cul.execute(sql)
+        result = self.cul.fetchall()
+        
+        settingDf = pd.DataFrame(result, columns= ["properTemperature", "properHeight", "properTemperatureRange", "properQuality"])
 
         self.properHeight = settingDf["properHeight"] # 적정 수위 -  
         self.properTemperature = settingDf["properTemperature"] #적정 온도
         self.properTemperatureRange = settingDf["properTemperatureRange"] #온도 범위
         self.properQuality = settingDf["properQuality"] # 적정 탁도
 
+        self.properHeightLabel.setText("적정수위 : " + str(self.properHeight[0]))
+        self.properTemperatureLabel.setText("적정온도 : " + str(self.properTemperature[0]))
+        self.properTemperatureRangeLabel.setText("온도 범위 : " + str(self.properTemperatureRange[0]))
+        self.properQualityLabel.setText("적정수질 : " + str(self.properQuality[0]))
 
 
     def saveSettingData(self) : 
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
-        cur = conn.cursor(buffered = True)
         sql = "delete from settingData"
-        cur.execute(sql)
+        self.cul.execute(sql)
 
         sql = f"insert into settingData (properHeight, properTemperature, properTemperatureRange, properQuality)\
-        values({self.properHeight}, {self.properTemperature}, {self.properTemperatureRange}, {self.properQuality})"
+        values({self.properHeightCB.currentText()}, {self.properTemperatureCB.currentText()}, {self.properTemperatureRangeCB.currentText()}, {self.properQualityCB.currentText()})"
 
-        cur.execute(sql)
-        conn.commit()
+        self.cul.execute(sql)
+        self.conn.commit()
+        self.getSettingData()
+
         
-        conn.close()
 
     def showStatusOfFishbowl(self) :
         text = "어항상태 -"
         
 
-        if self.waterTemperature > 40 : # 
+        if self.waterTemperature > self.properTemperature[0] + self.properTemperatureRange[0] : # 
             text += " 냉각 필요"
             self.tempStateLabel.setText("부적합")
-        elif self.waterTemperature < 20 : # 
+        elif self.waterTemperature < self.properTemperature[0] - self.properTemperatureRange[0] : # 
             text += " 보온 필요"
             self.tempStateLabel.setText("부적합")
         else :
             self.tempStateLabel.setText("적합")
 
 
-        if self.waterLevel > 8 : 
+        if self.waterLevel < self.properHeight[0] : 
             text += " 물 보충 필요"
             self.levelStateLabel.setText("부적합")
         else : 
             self.levelStateLabel.setText("적합")
 
 
-        if self.waterQuality < 600 : # 센서도착시 확인후 변경
+        if self.waterQuality < self.properQuality[0] : 
             text += " 물 교체 필요"
             self.qulityStateLabel.setText("부적합")
         else:
@@ -239,36 +238,25 @@ class iotComputer(QMainWindow, from_class):
         self.fishbowlStateLabel.setText(text)
         
     def saveData(self) :
-        # local db 사용
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
         
-        cur = conn.cursor(buffered = True)
+        
+        
         sql = f"insert into aquarium (time, water_height, water_quality, water_temperature)\
         values(current_timestamp, {self.waterLevel}, {self.waterQuality}, {self.waterTemperature})"
 
-        cur.execute(sql)
-        conn.commit()
+        self.cul.execute(sql)
+        self.conn.commit()
         
-        conn.close()
+        
         
         self.getDataLog()
         
     def getDataLog(self):
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
         
-        cur = conn.cursor(buffered = True)
         sql = "select * from aquarium"
-        cur.execute(sql)
-        result = cur.fetchall()
-        conn.close()
+        self.cul.execute(sql)
+        result = self.cul.fetchall()
+        
         
 
         self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level", "water_quality", "water_temperature"])
