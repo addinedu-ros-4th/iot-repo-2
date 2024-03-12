@@ -1331,7 +1331,7 @@ border-radius: 10px;</string>
       <string>설정 호출</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="applySettingButton_2">
+    <widget class="QPushButton" name="applySettingButton">
      <property name="geometry">
       <rect>
        <x>350</x>

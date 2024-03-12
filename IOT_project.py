@@ -106,7 +106,6 @@ class settingWindow(QDialog):
 
         cur.execute(sql)
         conn.commit()
-        conn.close()
 
 class iotComputer(QMainWindow, from_class):
 
@@ -149,7 +148,9 @@ class iotComputer(QMainWindow, from_class):
         for value in result:
             self.settingID.addItem(str(value[0]))
         
-        self.settingDF = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality"])
+        self.settingDF = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality", "properTempRange"])
+        self.settingTable.setRowCount(len(self.settingDF.index))
+        self.settingTable.setColumnCount(len(self.settingDF.columns))
         
         for col_index, column in enumerate(self.settingDF.columns):
             value = self.settingDF.loc[0][column]
@@ -158,7 +159,6 @@ class iotComputer(QMainWindow, from_class):
             self.settingTable.setItem(0, col_index, item)
         
                 
-        self.conn.close()
 
         self.count = 0
         self.waterTemperature = 0. # 수온
@@ -168,6 +168,7 @@ class iotComputer(QMainWindow, from_class):
         self.lightIsOn = False # 전구 상태
         self.mealCount = 0
         self.lightStatus = False
+        self.currentID = 1
         
         self.planList = ""
         self.mealCountList = ""
@@ -176,7 +177,7 @@ class iotComputer(QMainWindow, from_class):
         
         
         
-        # self.getSettingData()
+        self.getSettingData()
         startTime = time.strftime('%H:%M:%S').split(":")
         self.startTimeTypeMilliSecond = (int(startTime[0]) * 60**2 + int(startTime[1]) * 60 + int(startTime[2])) * 1000 # 시작시 시간(단위 : ms)
         
@@ -188,8 +189,8 @@ class iotComputer(QMainWindow, from_class):
         self.dbThread.running = True
         self.dbThread.start()
         
-        # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
-        self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] 
+        # proper level, proper temp, proper quality, meal_count, meal, start_time(ms), plan
+        self.commendList = [25, 24, 5, self.mealCountList + ",0", 0, self.startTimeTypeMilliSecond, self.planList + ",0"] 
         
 
         self.levelPlot = self.levelGraph.plot(pen = "b")
@@ -208,8 +209,18 @@ class iotComputer(QMainWindow, from_class):
         
         self.addSettingButton.clicked.connect(self.showSettingWindow)
         self.callSettingButton.clicked.connect(self.callSetting)
+        self.applySettingButton.clicked.connect(self.applySetting)
                 
         self.inputThread.update.connect(self.updateInput) # link Thread
+    
+    
+    def applySetting(self):
+        self.currentID = int(self.settingID.currentText())
+        self.selectedSetting = self.settingDF.iloc[self.currentID]
+        self.commendList = [self.selectedSetting["properLevel"], self.selectedSetting["properTemp"], self.selectedSetting["properQuality"], 
+                            self.mealCountList + ",0", 0, self.startTimeTypeMilliSecond, self.planList + ",0"]
+
+        self.sendSignal()
     
     
     def showSettingWindow(self):
@@ -217,6 +228,7 @@ class iotComputer(QMainWindow, from_class):
         setting_window.exec_()
     
     def callSetting(self):
+        self.settingID.clear()
         self.conn = mysql.connector.connect( # db 초기화
             user = self.user,
             password = self.password,
@@ -230,7 +242,7 @@ class iotComputer(QMainWindow, from_class):
         for value in result:
             self.settingID.addItem(str(value[0]))
         
-        self.settingDF = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality"])
+        self.settingDF = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality", "properTempRange"])
         
         for col_index, column in enumerate(self.settingDF.columns):
             value = self.settingDF.loc[0][column]
@@ -239,9 +251,9 @@ class iotComputer(QMainWindow, from_class):
             self.settingTable.setItem(0, col_index, item) 
      
     def changeSetting(self) :
-        settingID = int(self.settingID.currentText())
+        self.currentID = int(self.settingID.currentText())
         for col_index, column in enumerate(self.settingDF.columns):
-            value = self.settingDF.loc[settingID-1][column]
+            value = self.settingDF.loc[self.currentID-1][column]
             
             item = QTableWidgetItem(str(value))
             self.settingTable.setItem(0, col_index, item)        
@@ -271,33 +283,28 @@ class iotComputer(QMainWindow, from_class):
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
 
             self.showStatusOfFishbowl()    
-                
-            if self.lightStatus:
-                self.lightButton.setText("온열등 끄기")
-            elif not self.lightStatus:
-                self.lightButton.setText("온열등 켜기")
             
             self.saveData()
 
             
             
         
-    # def getSettingData(self) : 
-    #     sql = "select * from settingData"
-    #     self.cul.execute(sql)
-    #     result = self.cul.fetchall()
+    def getSettingData(self) : 
+        sql = "select * from aquarium_setting"
+        self.cur.execute(sql)
+        result = self.cur.fetchall()
         
-    #     settingDf = pd.DataFrame(result, columns= ["properTemperature", "properHeight", "properQuality"])
+        settingDf = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality", "properTempRange"])
 
-    #     self.properHeight = settingDf["properHeight"] # 적정 수위 -  
-    #     self.properTemperature = settingDf["properTemperature"] #적정 온도
-    #     self.properTemperatureRange = settingDf["properTemperatureRange"] #온도 범위
-    #     self.properQuality = settingDf["properQuality"] # 적정 탁도
+        self.properHeight = settingDf["properLevel"] # 적정 수위 -  
+        self.properTemperature = settingDf["properTemp"] #적정 온도
+        self.properTemperatureRange = settingDf["properTempRange"] #온도 범위
+        self.properQuality = settingDf["properQuality"] # 적정 탁도
 
-    #     self.properHeightLabel.setText("적정수위 : " + str(self.properHeight[0]))
-    #     self.properTemperatureLabel.setText("적정온도 : " + str(self.properTemperature[0]))
-    #     # self.properTemperatureRangeLabel.setText("온도 범위 : " + str(self.properTemperatureRange[0]))
-    #     self.properQualityLabel.setText("적정수질 : " + str(self.properQuality[0]))
+        self.properHeightLabel.setText("적정수위 : " + str(self.properHeight[self.currentID-1]))
+        self.properTemperatureLabel.setText("적정온도 : " + str(self.properTemperature[self.currentID-1]))
+        self.properTemperatureRangeLabel.setText("온도 범위 : " + str(self.properTemperatureRange[0]))
+        self.properQualityLabel.setText("적정수질 : " + str(self.properQuality[self.currentID-1]))
 
 
 
@@ -340,25 +347,23 @@ class iotComputer(QMainWindow, from_class):
         sql = f"insert into aquarium (time, water_height, water_quality, water_temperature)\
         values(current_timestamp, {self.waterLevel}, {self.waterQuality}, {self.waterTemperature})"
 
-        self.cul.execute(sql)
+        self.cur.execute(sql)
         self.conn.commit()
         
         
-        # sql = f"insert into aquarium_action (time, light, pump, servo)\
-        #     values(current_timestamp, {self.lightStatus}, {self.pumpStatus}, {self.servoStatus})"
+        sql = f"insert into aquarium_action (time, light, pump, servo)\
+            values(current_timestamp, {self.lightStatus}, {self.pumpStatus}, {self.servoStatus})"
             
-        # cur.execute(sql)
-        # conn.commit()
-        
-        # conn.close()
-        
+        self.cur.execute(sql)
+        self.conn.commit()
+                
         self.getDataLog()
         
     def getDataLog(self):
         
         sql = "select * from aquarium"
-        self.cul.execute(sql)
-        result = self.cul.fetchall()
+        self.cur.execute(sql)
+        result = self.cur.fetchall()
         
         
 
@@ -398,7 +403,8 @@ class iotComputer(QMainWindow, from_class):
             self.mealCountList += str(Feed_number)
         else:
             self.mealCountList += "," + str(Feed_number)
-        self.commendList = [0, 0, 0, self.mealCountList + ",0", 0, 0, self.startTimeTypeMilliSecond, self.planList + ",0"]
+        self.commendList = [self.selectedSetting["properLevel"], self.selectedSetting["properTemp"], self.selectedSetting["properQuality"], 
+                            self.mealCountList + ",0", 0, self.startTimeTypeMilliSecond, self.planList + ",0"]
 
         self.sendSignal()
 
@@ -457,16 +463,6 @@ class iotComputer(QMainWindow, from_class):
     def sendSignal(self):
         commend = str(self.commendList).replace("[", "").replace("]", "")
         self.pySerial.write(commend.encode())
-
-    def turnOnLight(self) : # 전구 키는 함수
-        if self.commendList[2] != 1 :
-            self.commendList[2] = 1
-            self.sendSignal()
-
-    def turnOffLight(self) : # 전구 끄는 함수
-        if self.commendList[2] != 0 :
-            self.commendList[2] = 0
-            self.sendSignal()
 
 
 def main() :

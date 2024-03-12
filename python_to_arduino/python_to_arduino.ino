@@ -11,7 +11,7 @@ const int pumpPin = 12;
 const int LIGHT = 6;
 
 const int height = 30; 
-const int proper_level = 24;
+
 
 Servo servo;
 
@@ -25,13 +25,12 @@ int water_count = 0;
 
 OneWire ds(2); 
 
-String angle = "0";
 String meal_count = "";
-String water_level = "0";
-
 String meal = "0";
-String light = "0";
-String water = "0";
+
+String properLevel = "24";
+String properTemp = "25";
+String properQuality = "5";
 
 String start_time = "0";
 String plan_list = "0";
@@ -91,25 +90,23 @@ float getTemp(){                                   //온도 측정 후 반환하
 
 void decode_input(String orders) {
   
-  meal = orders.substring(0, orders.indexOf(","));
-  sub_string = orders.substring(orders.indexOf(",") + meal.length());
-  Serial.println(sub_string);
-  water = sub_string.substring(1, sub_string.indexOf(","));
-  sub_string = sub_string.substring(sub_string.indexOf(",") + water.length());
-  
-  light = sub_string.substring(1, sub_string.indexOf(", "));
-  sub_string = sub_string.substring(sub_string.indexOf(", ") + light.length());
+  properLevel = orders.substring(0, orders.indexOf(","));
+  sub_string = orders.substring(orders.indexOf(",") + properTemp.length());
 
+  Serial.println(sub_string);
+
+  properTemp = sub_string.substring(1, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + properTemp.length());
   
+  properQuality = sub_string.substring(1, sub_string.indexOf(", "));
+  sub_string = sub_string.substring(sub_string.indexOf(", ") + properQuality.length());
+
+
   meal_count = sub_string.substring(2, sub_string.indexOf("',"));
   sub_string = sub_string.substring(sub_string.indexOf(",") + meal_count.length() + 1);
-  
-  
-  water_level = sub_string.substring(1, sub_string.indexOf(","));
-  sub_string = sub_string.substring(sub_string.indexOf(",") + water_level.length());
-  
-  angle = sub_string.substring(1, sub_string.indexOf(", "));
-  sub_string = sub_string.substring(sub_string.indexOf(", ") + angle.length());
+
+  meal = sub_string.substring(2, sub_string.indexOf("',"));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + meal.length() + 1);
 
   start_time = sub_string.substring(1, sub_string.indexOf(","));
   sub_string = sub_string.substring(start_time.length() + 3);
@@ -198,9 +195,10 @@ void loop() {
 
 
 //water level pumping 
-  if (level < proper_level) {
+  if (level < 25) {
     analogWrite(pumpPin, 150);
     pump_is_activated = true;
+
     
     //Serial.println("water on");
   }
@@ -210,29 +208,15 @@ void loop() {
     pump_is_activated = false;
   } 
 
-  if (temperature < 20){
+  if (temperature < 24){
     digitalWrite(LIGHT, HIGH);
     light_is_on = true;
   }
-  else if (temperature >= 22){
+  else if (temperature >= 24){
     digitalWrite(LIGHT, LOW);
     light_is_on = false;
   }
 
-
-//water sign o 
-  if (water =="1") {
-    analogWrite(pumpPin, 255);
-    water_count = 0;
-    water = "0";
-    //Serial.println("pump on");
-  }
-  else if (level >= proper_level && water == "0") {
-    analogWrite(pumpPin, 0);
-  }
-  else if (water_count == 20 && water == "0") {
-    analogWrite(pumpPin, 0);
-  }
 
   if (meal == "1") {
     servo.write(servo_angle);
@@ -250,14 +234,6 @@ void loop() {
     plan_is_now();
   }
 
-  if (light =="1" && !light_is_on) {
-    digitalWrite(LIGHT, HIGH);
-    light_is_on = true;
-  }
-  else if (light == "0" && light_is_on) {
-    digitalWrite(LIGHT, LOW);
-    light_is_on = false;
-  }
 
 
 
@@ -270,8 +246,6 @@ void loop() {
 
   response =  "{\"waterLevel\" : " + (String)level + ", " + 
   "\"waterTemperature\" : " + (String)temperature + ", " + 
-  "\"meal\" : " + (String)meal + ", " + 
-  "\"water\" : " + (String)water + ", " + 
   "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", "
   "\"light\" : "+ (String)light_is_on + ", "
   "\"pump\" : "+ (String)pump_is_activated +", "
