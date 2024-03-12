@@ -74,6 +74,10 @@ class iotComputer(QMainWindow, from_class):
         sql = "delete from aquarium"
         cur.execute(sql)
         conn.commit()
+        
+        sql = "delete from aquarium_action"
+        cur.execute(sql)
+        conn.commit()
         conn.close()
 
         
@@ -83,6 +87,7 @@ class iotComputer(QMainWindow, from_class):
         self.temperatureRange = 0. # 수온 범위
         self.lightIsOn = False # 전구 상태
         self.mealCount = 0
+        self.lightStatus = False
         
         self.planList = ""
         self.mealCountList = ""
@@ -128,7 +133,7 @@ class iotComputer(QMainWindow, from_class):
 
         
         self.inputThread.update.connect(self.updateInput) # link Thread
-        self.dbThread.update2.connect(self.saveData)
+        # self.dbThread.update2.connect(self.saveData)
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
@@ -142,23 +147,31 @@ class iotComputer(QMainWindow, from_class):
                 self.waterQuality = decodedDict["waterQuality"]
                 self.waterLevel = decodedDict["waterLevel"]
                 self.waterTemperature = decodedDict["waterTemperature"]
+                self.lightStatus = decodedDict["light"]
+                self.pumpStatus = decodedDict["pump"]
+                self.servoStatus = decodedDict["servo"]
                 
                 print(self.commendList, decodedDict)
                 
             except SyntaxError:
-                print(self.pySerial.readline().decode())
+                print("error")
                 
-
-            
+    
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
             self.tempNowLabel.setText(str(self.waterTemperature) + "°C")
             self.waterLevelLabel.setText(str(self.waterLevel) + "cm")
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
             self.showStatusOfFishbowl()
+        
+            if self.lightStatus:
+                self.lightButton.setText("온열등 끄기")
+            elif not self.lightStatus:
+                self.lightButton.setText("온열등 켜기")
+            
+            self.saveData()
             
             
-        
-        
+
 
     def showStatusOfFishbowl(self) :
         text = "어항상태 -"
@@ -204,6 +217,12 @@ class iotComputer(QMainWindow, from_class):
         sql = f"insert into aquarium (time, water_height, water_quality, water_temperature)\
         values(current_timestamp, {self.waterLevel}, {self.waterQuality}, {self.waterTemperature})"
 
+        cur.execute(sql)
+        conn.commit()
+        
+        sql = f"insert into aquarium_action (time, light, pump, servo)\
+            values(current_timestamp, {self.lightStatus}, {self.pumpStatus}, {self.servoStatus})"
+            
         cur.execute(sql)
         conn.commit()
         

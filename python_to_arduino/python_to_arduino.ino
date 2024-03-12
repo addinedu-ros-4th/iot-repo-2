@@ -8,6 +8,7 @@ const int WQUALITY = 15;
 const int WTEMP = 16;
 
 const int pumpPin = 12;
+const int LIGHT = 6;
 
 const int height = 30; 
 const int proper_level = 24;
@@ -15,6 +16,8 @@ const int proper_level = 24;
 Servo servo;
 
 bool servo_is_activated = false;
+bool pump_is_activated = false;
+bool light_is_on = false;
 
 int count = 0;
 int servo_angle = 150;
@@ -47,6 +50,7 @@ void setup() {
   pinMode(WLEVELTRIG, OUTPUT);
   pinMode(WLEVELECHO, INPUT);
   pinMode(WTEMP, INPUT);
+  pinMode(LIGHT, OUTPUT);
 
 
 }
@@ -169,6 +173,9 @@ void loop() {
 
   count ++;
   water_count++;
+
+  digitalWrite(LIGHT, LOW);
+
   float duration, distance;
   digitalWrite(WLEVELTRIG, LOW);
   delayMicroseconds(2);
@@ -178,15 +185,8 @@ void loop() {
   duration = pulseIn(WLEVELECHO, HIGH);
   distance = ((float)(340 * duration) / 10000) / 2; //distance : sensor~surface distance -> water level = bowl height - distance 
   float level = height - distance; 
-  
 
-  response =  "{\"waterLevel\" : " + (String)level + ", " + 
-  "\"waterTemperature\" : " + (String)getTemp() + ", " + 
-  "\"meal\" : " + (String)meal + ", " + 
-  "\"water\" : " + (String)water + ", " + 
-  "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + "}";
-
-  Serial.println(response);
+  float temperature = getTemp();
    
 
   if (Serial.available()) {
@@ -199,13 +199,25 @@ void loop() {
 
 //water level pumping 
   if (level < proper_level) {
-    analogWrite(pumpPin, 255);
+    analogWrite(pumpPin, 150);
+    pump_is_activated = true;
+    
     //Serial.println("water on");
   }
   else {
     analogWrite(pumpPin, 0);
     //Serial.println("water off");
+    pump_is_activated = false;
   } 
+
+  if (temperature < 20){
+    digitalWrite(LIGHT, HIGH);
+    light_is_on = true;
+  }
+  else if (temperature >= 22){
+    digitalWrite(LIGHT, LOW);
+    light_is_on = false;
+  }
 
 
 //water sign o 
@@ -238,7 +250,14 @@ void loop() {
     plan_is_now();
   }
 
-  
+  if (light =="1" && !light_is_on) {
+    digitalWrite(LIGHT, HIGH);
+    light_is_on = true;
+  }
+  else if (light == "0" && light_is_on) {
+    digitalWrite(LIGHT, LOW);
+    light_is_on = false;
+  }
 
 
 
@@ -248,6 +267,17 @@ void loop() {
   if (water_count >= 500) {
     water_count = 0;
   }
+
+  response =  "{\"waterLevel\" : " + (String)level + ", " + 
+  "\"waterTemperature\" : " + (String)temperature + ", " + 
+  "\"meal\" : " + (String)meal + ", " + 
+  "\"water\" : " + (String)water + ", " + 
+  "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", "
+  "\"light\" : "+ (String)light_is_on + ", "
+  "\"pump\" : "+ (String)pump_is_activated +", "
+  "\"servo\" : "+ (String)servo_is_activated + "}";
+
+  Serial.println(response);
     
   
   delay(500);
