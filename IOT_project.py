@@ -63,11 +63,20 @@ class iotComputer(QMainWindow, from_class):
         self.setGeometry(0, 0, 1260, 800)
         self.pySerial = sri.Serial(port="/dev/ttyACM0", baudrate=9600)
         
-        # db 초기화
-        conn = mysql.connector.connect(
-            user = "joe",
-            password = "0000",
-            database = "amrbase"
+
+        ###### DB option
+        self.user = "rds"
+        self.password = "8470"
+        self.database = "amrbase"
+
+        ######
+
+
+        
+        conn = mysql.connector.connect( # db 초기화
+            user = self.user,
+            password = self.password,
+            database = self.database
         )
         
         cur = conn.cursor(buffered = True)
@@ -89,13 +98,10 @@ class iotComputer(QMainWindow, from_class):
 
         
         
-        self.properHeight = 16 # 적정 수위 -  
-        self.properTemperature = 20 #적정 온도 
-        self.properQuality = 15 # 적정 tds 
         
-        self.levelState ='수위 적절' #상태창에 띄우는 어항 상태값- 디폴트는 적합으로 
-        self.temperatureState='온도 적절/ '
-        self.qualityState='수질 적절/ ' #--sy 
+        
+        
+        self.getSettingData()
 
 
         startTime = time.strftime('%H:%M:%S').split(":")
@@ -125,15 +131,15 @@ class iotComputer(QMainWindow, from_class):
         self.minusMealButton.clicked.connect(self.minusMealPlan)
         self.plusMealButton.clicked.connect(self.plusMealPlan)
 
-
+        
         
         self.inputThread.update.connect(self.updateInput) # link Thread
-        self.dbThread.update2.connect(self.saveData)
+        #self.dbThread.update2.connect(self.saveData)
 
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
-            
+            print(self.properTemperature)
             try:
 
                 decodedDict = eval(self.pySerial.readline().decode())
@@ -155,10 +161,50 @@ class iotComputer(QMainWindow, from_class):
             self.waterLevelLabel.setText(str(self.waterLevel) + "cm")
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
             self.showStatusOfFishbowl()
+            self.saveData()
             
             
         
+    def getSettingData(self) : 
+        conn = mysql.connector.connect(
+            user = self.user,
+            password = self.password,
+            database = self.database
+        )
         
+
+
+        cur = conn.cursor(buffered = True)
+        sql = "select * from settingData"
+        cur.execute(sql)
+        result = cur.fetchall()
+        conn.close()
+        settingDf = pd.DataFrame(result, columns= ["properHeight", "properTemperature", "properTemperatureRange", "properQuality"])
+
+        self.properHeight = settingDf["properHeight"] # 적정 수위 -  
+        self.properTemperature = settingDf["properTemperature"] #적정 온도
+        self.properTemperatureRange = settingDf["properTemperatureRange"] #온도 범위
+        self.properQuality = settingDf["properQuality"] # 적정 탁도
+
+
+
+    def saveSettingData(self) : 
+        conn = mysql.connector.connect(
+            user = self.user,
+            password = self.password,
+            database = self.database
+        )
+        cur = conn.cursor(buffered = True)
+        sql = "delete from settingData"
+        cur.execute(sql)
+
+        sql = f"insert into settingData (properHeight, properTemperature, properTemperatureRange, properQuality)\
+        values({self.properHeight}, {self.properTemperature}, {self.properTemperatureRange}, {self.properQuality})"
+
+        cur.execute(sql)
+        conn.commit()
+        
+        conn.close()
 
     def showStatusOfFishbowl(self) :
         text = "어항상태 -"
@@ -195,9 +241,9 @@ class iotComputer(QMainWindow, from_class):
     def saveData(self) :
         # local db 사용
         conn = mysql.connector.connect(
-            user = "joe",
-            password = "0000",
-            database = "amrbase"
+            user = self.user,
+            password = self.password,
+            database = self.database
         )
         
         cur = conn.cursor(buffered = True)
@@ -213,9 +259,9 @@ class iotComputer(QMainWindow, from_class):
         
     def getDataLog(self):
         conn = mysql.connector.connect(
-            user = "joe",
-            password = "0000",
-            database = "amrbase"
+            user = self.user,
+            password = self.password,
+            database = self.database
         )
         
         cur = conn.cursor(buffered = True)
