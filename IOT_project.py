@@ -163,9 +163,7 @@ class iotComputer(QMainWindow, from_class):
             value = self.settingDF.loc[settingID-1][column]
             
             item = QTableWidgetItem(str(value))
-            self.settingTable.setItem(0, col_index, item)
-    def applySetting(self):
-        
+            self.settingTable.setItem(0, col_index, item)        
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
