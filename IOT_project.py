@@ -54,6 +54,60 @@ class Thread(QThread) :
 
 path = "./IoTproject.ui"
 from_class = uic.loadUiType(path)[0]
+
+class settingWindow(QDialog):
+    def __init__(self, iotComputer):
+        super().__init__()
+        
+        self.ui = uic.loadUi("IoTproject_sub.ui", self)
+        self.iotComputer = iotComputer
+        self.show()
+        
+        
+        list_view = QListView()
+        self.properQualityCB.setView(list_view) 
+        self.properQualityCB.view().setResizeMode(QListView.Adjust)
+        for i in range(41) :
+            self.properTemperatureCB.addItem(str(i))
+
+        for i in range(101) :
+            self.properQualityCB.addItem(str(i))
+            
+            
+        ###### DB option
+        self.user = "joe"
+        self.password = "0000"
+        self.database = "amrbase"
+
+        #####
+            
+        self.saveSettingButton.clicked.connect(self.saveSettingData)
+        
+        
+    def quitWindow(self):
+        self.hide()
+        
+    def saveSettingData(self) : 
+        conn = mysql.connector.connect( # db 초기화
+            user = self.user,
+            password = self.password,
+            database = self.database
+        )
+        
+        cur = conn.cursor(buffered = True)
+        
+        sql = "select count(*) from aquarium_setting"
+        cur.execute(sql)
+        result = cur.fetchall()
+        settingNumber = result[0][0] + 1
+        
+        sql = f"insert into aquarium_setting (ID, proper_level, proper_temp, proper_quality)\
+        values({settingNumber}, {self.properHeightCB.currentText()}, {self.properTemperatureCB.currentText()}, {self.properQualityCB.currentText()})"
+
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+
 class iotComputer(QMainWindow, from_class):
 
     def __init__(self) :
@@ -72,43 +126,41 @@ class iotComputer(QMainWindow, from_class):
         ######
 
 
-        
-        conn = mysql.connector.connect( # db 초기화
+        self.conn = mysql.connector.connect( # db 초기화
             user = self.user,
             password = self.password,
             database = self.database
         )
         
-        cur = conn.cursor(buffered = True)
+        self.cur = self.conn.cursor(buffered = True)
         sql = "delete from aquarium"
-        cur.execute(sql)
-        conn.commit()
+
+        self.cur.execute(sql)
+        self.conn.commit()
         
         sql = "delete from aquarium_action"
-        cur.execute(sql)
-        conn.commit()
+        self.cur.execute(sql)
+        self.conn.commit()
         
         sql = "select * from aquarium_setting"
-        cur.execute(sql)
-        result = cur.fetchall()
+        self.cur.execute(sql)
+        result = self.cur.fetchall()
         
         for value in result:
             self.settingID.addItem(str(value[0]))
         
         self.settingDF = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality"])
         
-        
-        self.settingTable.setRowCount(len(self.settingDF.index))
-        self.settingTable.setColumnCount(len(self.settingDF.columns))
-        
         for col_index, column in enumerate(self.settingDF.columns):
             value = self.settingDF.loc[0][column]
             
             item = QTableWidgetItem(str(value))
-            self.settingTable.setItem(0, col_index, item) 
-        conn.close()
-
+            self.settingTable.setItem(0, col_index, item)
         
+                
+        self.conn.close()
+
+        self.count = 0
         self.waterTemperature = 0. # 수온
         self.waterQuality = 0. # 수질 수치
         self.waterLevel = 0. # 수위
@@ -121,12 +173,10 @@ class iotComputer(QMainWindow, from_class):
         self.mealCountList = ""
 
         self.settingID.currentIndexChanged.connect(self.changeSetting)
-        self.changeSettingButton.clicked.connect(self.applySetting)
         
         
         
-        
-        self.getSettingData()
+        # self.getSettingData()
         startTime = time.strftime('%H:%M:%S').split(":")
         self.startTimeTypeMilliSecond = (int(startTime[0]) * 60**2 + int(startTime[1]) * 60 + int(startTime[2])) * 1000 # 시작시 시간(단위 : ms)
         
@@ -138,7 +188,9 @@ class iotComputer(QMainWindow, from_class):
         self.dbThread.running = True
         self.dbThread.start()
         
-        self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
+        # meal, water, light, meal_count, water_level, servo_angle, start_time(ms), plan
+        self.commendList = [0, 0, 0, self.mealCountList, 0, 0, self.startTimeTypeMilliSecond, self.planList] 
+        
 
         self.levelPlot = self.levelGraph.plot(pen = "b")
         self.qualityPlot = self.qualityGraph.plot(pen = "g")
@@ -149,14 +201,43 @@ class iotComputer(QMainWindow, from_class):
         self.pySerial.write(commend.encode())
         
 
-        self.mealButton.clicked.connect(self.sendSignalFormeal)
-        self.waterButton.clicked.connect(self.sendSignalForWater)
+        
         self.minusMealButton.clicked.connect(self.minusMealPlan)
         self.plusMealButton.clicked.connect(self.plusMealPlan)
+
+        
+        self.addSettingButton.clicked.connect(self.showSettingWindow)
+        self.callSettingButton.clicked.connect(self.callSetting)
                 
-        
         self.inputThread.update.connect(self.updateInput) # link Thread
+    
+    
+    def showSettingWindow(self):
+        setting_window = settingWindow(self)
+        setting_window.exec_()
+    
+    def callSetting(self):
+        self.conn = mysql.connector.connect( # db 초기화
+            user = self.user,
+            password = self.password,
+            database = self.database
+        )
+        self.cur = self.conn.cursor(buffered = True)
+        sql = "select * from aquarium_setting"
+        self.cur.execute(sql)
+        result = self.cur.fetchall()
         
+        for value in result:
+            self.settingID.addItem(str(value[0]))
+        
+        self.settingDF = pd.DataFrame(result, columns= ["ID", "properLevel", "properTemp", "properQuality"])
+        
+        for col_index, column in enumerate(self.settingDF.columns):
+            value = self.settingDF.loc[0][column]
+            
+            item = QTableWidgetItem(str(value))
+            self.settingTable.setItem(0, col_index, item) 
+     
     def changeSetting(self) :
         settingID = int(self.settingID.currentText())
         for col_index, column in enumerate(self.settingDF.columns):
@@ -167,7 +248,6 @@ class iotComputer(QMainWindow, from_class):
 
     def updateInput(self) : # 아두이노신호 받는 함수 (반복됨)
         if self.pySerial.in_waiting != 0:
-            print(self.properTemperature)
             try:
 
                 decodedDict = eval(self.pySerial.readline().decode())
@@ -185,11 +265,11 @@ class iotComputer(QMainWindow, from_class):
             except SyntaxError:
                 print("error")
                 
-    
             self.fishbowlHistoryLabel.setText("어항기록 - 현재시간 : " + time.strftime("%Y-%m-%d %H:%M:%S"))
             self.tempNowLabel.setText(str(self.waterTemperature) + "°C")
             self.waterLevelLabel.setText(str(self.waterLevel) + "cm")
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
+
             self.showStatusOfFishbowl()    
                 
             if self.lightStatus:
@@ -198,70 +278,51 @@ class iotComputer(QMainWindow, from_class):
                 self.lightButton.setText("온열등 켜기")
             
             self.saveData()
+
             
             
         
-    def getSettingData(self) : 
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
+    # def getSettingData(self) : 
+    #     sql = "select * from settingData"
+    #     self.cul.execute(sql)
+    #     result = self.cul.fetchall()
         
-        cur = conn.cursor(buffered = True)
-        sql = "select * from aquarium_setting"
-        cur.execute(sql)
-        result = cur.fetchall()
-        conn.close()
-        settingDf = pd.DataFrame(result, columns= ["properHeight", "properTemperature", "properTemperatureRange", "properQuality"])
+    #     settingDf = pd.DataFrame(result, columns= ["properTemperature", "properHeight", "properQuality"])
 
-        self.properHeight = settingDf["properHeight"] # 적정 수위 -  
-        self.properTemperature = settingDf["properTemperature"] #적정 온도
-        self.properTemperatureRange = settingDf["properTemperatureRange"] #온도 범위
-        self.properQuality = settingDf["properQuality"] # 적정 탁도
+    #     self.properHeight = settingDf["properHeight"] # 적정 수위 -  
+    #     self.properTemperature = settingDf["properTemperature"] #적정 온도
+    #     self.properTemperatureRange = settingDf["properTemperatureRange"] #온도 범위
+    #     self.properQuality = settingDf["properQuality"] # 적정 탁도
+
+    #     self.properHeightLabel.setText("적정수위 : " + str(self.properHeight[0]))
+    #     self.properTemperatureLabel.setText("적정온도 : " + str(self.properTemperature[0]))
+    #     # self.properTemperatureRangeLabel.setText("온도 범위 : " + str(self.properTemperatureRange[0]))
+    #     self.properQualityLabel.setText("적정수질 : " + str(self.properQuality[0]))
 
 
-
-    def saveSettingData(self) : 
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
-        cur = conn.cursor(buffered = True)
-        sql = "delete from settingData"
-        cur.execute(sql)
-
-        sql = f"insert into settingData (properHeight, properTemperature, properTemperatureRange, properQuality)\
-        values({self.properHeight}, {self.properTemperature}, {self.properTemperatureRange}, {self.properQuality})"
-
-        cur.execute(sql)
-        conn.commit()
-        
-        conn.close()
 
     def showStatusOfFishbowl(self) :
         text = "어항상태 -"
         
 
-        if self.waterTemperature > 40 : # 
+        if self.waterTemperature > self.properTemperature[0] + self.properTemperatureRange[0] : # 
             text += " 냉각 필요"
             self.tempStateLabel.setText("부적합")
-        elif self.waterTemperature < 20 : # 
+        elif self.waterTemperature < self.properTemperature[0] - self.properTemperatureRange[0] : # 
             text += " 보온 필요"
             self.tempStateLabel.setText("부적합")
         else :
             self.tempStateLabel.setText("적합")
 
 
-        if self.waterLevel > 8 : 
+        if self.waterLevel < self.properHeight[0] : 
             text += " 물 보충 필요"
             self.levelStateLabel.setText("부적합")
         else : 
             self.levelStateLabel.setText("적합")
 
 
-        if self.waterQuality < 600 : # 센서도착시 확인후 변경
+        if self.waterQuality < self.properQuality[0] : 
             text += " 물 교체 필요"
             self.qulityStateLabel.setText("부적합")
         else:
@@ -273,42 +334,32 @@ class iotComputer(QMainWindow, from_class):
         self.fishbowlStateLabel.setText(text)
         
     def saveData(self) :
-        # local db 사용
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
         
-        cur = conn.cursor(buffered = True)
+        
+        
         sql = f"insert into aquarium (time, water_height, water_quality, water_temperature)\
         values(current_timestamp, {self.waterLevel}, {self.waterQuality}, {self.waterTemperature})"
 
-        cur.execute(sql)
-        conn.commit()
+        self.cul.execute(sql)
+        self.conn.commit()
         
-        sql = f"insert into aquarium_action (time, light, pump, servo)\
-            values(current_timestamp, {self.lightStatus}, {self.pumpStatus}, {self.servoStatus})"
+        
+        # sql = f"insert into aquarium_action (time, light, pump, servo)\
+        #     values(current_timestamp, {self.lightStatus}, {self.pumpStatus}, {self.servoStatus})"
             
-        cur.execute(sql)
-        conn.commit()
+        # cur.execute(sql)
+        # conn.commit()
         
-        conn.close()
+        # conn.close()
         
         self.getDataLog()
         
     def getDataLog(self):
-        conn = mysql.connector.connect(
-            user = self.user,
-            password = self.password,
-            database = self.database
-        )
         
-        cur = conn.cursor(buffered = True)
         sql = "select * from aquarium"
-        cur.execute(sql)
-        result = cur.fetchall()
-        conn.close()
+        self.cul.execute(sql)
+        result = self.cul.fetchall()
+        
         
 
         self.aquariumDf = pd.DataFrame(result, columns= ["datetime", "water_level", "water_quality", "water_temperature"])
@@ -326,20 +377,6 @@ class iotComputer(QMainWindow, from_class):
         self.qualityGraph.getPlotItem().hideAxis("bottom")
         self.tempGraph.plot(x, y["water_temperature"], pen = pg.mkPen(color = "r", width = 2))
         self.tempGraph.getPlotItem().hideAxis("bottom")
-
-
-
-
-    def sendSignalFormeal(self) : # 배식신호 발송 함수
-        self.commendList[0] = 1
-        self.sendSignal()
-        self.commendList[0] = 0
-
-
-    def sendSignalForWater(self) : # 물 추가신호 발송 함수
-        self.commendList[1] = 1 
-        self.sendSignal()
-        self.commendList[1] = 0
 
         
 
