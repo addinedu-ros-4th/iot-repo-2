@@ -279,10 +279,11 @@ class iotComputer(QMainWindow, from_class):
             self.waterQualityLabel.setText(str(self.waterQuality) + "mg")
 
             self.showStatusOfFishbowl()
-            self.count += 1    
-            if self.count >= 100 :
-                self.saveData()
-                self.count = 0
+            self.saveData()
+            # self.count += 1    
+            # if self.count >= 100 :
+            #     self.saveData()
+            #     self.count = 0
 
             
             
