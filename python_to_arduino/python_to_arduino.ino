@@ -149,7 +149,7 @@ void plan_is_now() {
     sub_string2 = sub_string2.substring(sub_string2.indexOf(",") + 1);
 
 
-    if (2500 >=  abs(plan.toInt() - ((start_time.toInt() + pretime) % 86400000))) {
+    if (3000 >=  abs(plan.toInt() - ((start_time.toInt() + pretime) % 86400000))) {
       is_now = true;
       break;
     }
@@ -214,11 +214,11 @@ void loop() {
     pump_is_activated = false;
   } 
 
-  if (temperature < properTemp.toFloat()){
+  if (temperature > properTemp.toFloat()){
     digitalWrite(LIGHT, HIGH);
     light_is_on = true;
   }
-  else if (temperature >= properTemp.toFloat()){
+  else if (temperature <= properTemp.toFloat()){
     digitalWrite(LIGHT, LOW);
     light_is_on = false;
   }
