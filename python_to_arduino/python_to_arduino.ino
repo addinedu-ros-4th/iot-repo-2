@@ -25,7 +25,7 @@ int water_count = 0;
 
 OneWire ds(2); 
 
-String meal_count = "";
+String meal_count = ",0";
 String meal = "0";
 
 String properLevel = "24";
@@ -33,7 +33,7 @@ String properTemp = "25";
 String properQuality = "5";
 
 String start_time = "0";
-String plan_list = "0";
+String plan_list = ",0";
 
 String order = "";
 String response = "";
@@ -50,7 +50,7 @@ void setup() {
   pinMode(WLEVELECHO, INPUT);
   pinMode(WTEMP, INPUT);
   pinMode(LIGHT, OUTPUT);
-
+  digitalWrite(LIGHT, LOW);
 
 }
 
@@ -91,28 +91,35 @@ float getTemp(){                                   //온도 측정 후 반환하
 void decode_input(String orders) {
   
   properLevel = orders.substring(0, orders.indexOf(","));
-  sub_string = orders.substring(orders.indexOf(",") + properTemp.length());
+  sub_string = orders.substring(orders.indexOf(",") + 1);
 
-  Serial.println(sub_string);
-
-  properTemp = sub_string.substring(1, sub_string.indexOf(","));
-  sub_string = sub_string.substring(sub_string.indexOf(",") + properTemp.length());
   
-  properQuality = sub_string.substring(1, sub_string.indexOf(", "));
-  sub_string = sub_string.substring(sub_string.indexOf(", ") + properQuality.length());
+  
+
+  properTemp = sub_string.substring(0, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + 1);
+  
+  
+  properQuality = sub_string.substring(0, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(","));
+
+  
+  meal_count = sub_string.substring(3, sub_string.indexOf("',"));
+  sub_string = sub_string.substring(sub_string.indexOf("',") + 2);
 
 
-  meal_count = sub_string.substring(2, sub_string.indexOf("',"));
-  sub_string = sub_string.substring(sub_string.indexOf(",") + meal_count.length() + 1);
+  meal = sub_string.substring(1, sub_string.indexOf(","));
+  sub_string = sub_string.substring(sub_string.indexOf(",") + 1);
 
-  meal = sub_string.substring(2, sub_string.indexOf("',"));
-  sub_string = sub_string.substring(sub_string.indexOf(",") + meal.length() + 1);
+ 
 
   start_time = sub_string.substring(1, sub_string.indexOf(","));
-  sub_string = sub_string.substring(start_time.length() + 3);
+  sub_string = sub_string.substring(sub_string.indexOf(",") + 1);
 
-  plan_list = sub_string;
-  
+ 
+
+  plan_list = sub_string.substring(2);
+  plan_list = plan_list.substring(0, plan_list.indexOf("'"));
   
 }
 
@@ -128,14 +135,12 @@ void plan_is_now() {
   unsigned long pretime = millis();
   bool is_now = false;
 
-  sub_string = plan_list.substring(1);
-  sub_string = (sub_string.substring(0, sub_string.indexOf("'")));
+  sub_string = plan_list;
   String plan = sub_string;
 
-  String sub_string2 = meal_count.substring(0);
-  sub_string2 = (sub_string2.substring(0, sub_string2.indexOf("'")));
+  String sub_string2 = meal_count;
   String plan_count = sub_string2;
-
+  
   while (1) {
     plan = (sub_string.substring(0, sub_string.indexOf(",")));
     sub_string = sub_string.substring(sub_string.indexOf(",") + 1);
@@ -151,6 +156,7 @@ void plan_is_now() {
     else if (plan == sub_string) {
       break;
     }
+    
     
     //Serial.println("{\"plan\" : "+ (String)plan.toInt() + "}" + (String)(start_time.toInt() + pretime));
   }
@@ -171,7 +177,7 @@ void loop() {
   count ++;
   water_count++;
 
-  digitalWrite(LIGHT, LOW);
+  
 
   float duration, distance;
   digitalWrite(WLEVELTRIG, LOW);
@@ -195,7 +201,7 @@ void loop() {
 
 
 //water level pumping 
-  if (level < 25) {
+  if (level < properLevel.toFloat()) {
     analogWrite(pumpPin, 150);
     pump_is_activated = true;
 
@@ -208,11 +214,11 @@ void loop() {
     pump_is_activated = false;
   } 
 
-  if (temperature < 24){
+  if (temperature < properTemp.toFloat()){
     digitalWrite(LIGHT, HIGH);
     light_is_on = true;
   }
-  else if (temperature >= 24){
+  else if (temperature >= properTemp.toFloat()){
     digitalWrite(LIGHT, LOW);
     light_is_on = false;
   }
@@ -246,10 +252,16 @@ void loop() {
 
   response =  "{\"waterLevel\" : " + (String)level + ", " + 
   "\"waterTemperature\" : " + (String)temperature + ", " + 
-  "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", "
-  "\"light\" : "+ (String)light_is_on + ", "
-  "\"pump\" : "+ (String)pump_is_activated +", "
-  "\"servo\" : "+ (String)servo_is_activated + "}";
+  "\"waterQuality\" : "+ (String)analogRead(WQUALITY) + ", " +
+  "\"light\" : "+ (String)light_is_on + ", " +
+  "\"properTemp\" : "+ properTemp + ", " +
+  "\"properQuality\" : "+ properQuality + ", " +
+  "\"servo\" : "+ (String)servo_is_activated + ", " +
+  "\"pump\" : "+ (String)pump_is_activated + "}"; //", " +
+  // "\"meal_count\" : "+ (String)meal_count + ", " +
+  // "\"meal\" : "+ (String)meal + ", " +
+  // "\"start_time\" : "+ (String)start_time + ", " +
+  // "\"plan_list\" : "+ (String)plan_list + "}";
 
   Serial.println(response);
     
